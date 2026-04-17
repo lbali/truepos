@@ -1,6 +1,6 @@
 {
     "name": "lbali/truepos",
-    "description": "Unified Turkish virtual POS gateway package for Laravel — all banks, one API.",
+    "description": "Unified Turkish virtual POS gateway package — all banks, one API. Framework-agnostic core with Laravel integration.",
     "keywords": ["laravel", "payment", "pos", "turkey", "sanal-pos", "nestpay", "garanti", "yapikredi", "3d-secure", "ödeme", "iyzico", "moka", "sipay", "tosla", "craftgate"],
     "license": "MIT",
     "type": "library",
@@ -20,14 +20,20 @@
         "php": "^8.2",
         "ext-simplexml": "*",
         "ext-dom": "*",
-        "illuminate/contracts": "^11.0|^12.0",
-        "illuminate/support": "^11.0|^12.0",
-        "illuminate/http": "^11.0|^12.0",
-        "illuminate/routing": "^11.0|^12.0",
-        "illuminate/events": "^11.0|^12.0",
-        "illuminate/cache": "^11.0|^12.0",
         "psr/http-client": "^1.0",
-        "psr/log": "^3.0"
+        "psr/http-factory": "^1.0",
+        "psr/log": "^3.0",
+        "psr/simple-cache": "^3.0",
+        "psr/event-dispatcher": "^1.0"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "PSR-18 HTTP client implementation (required if no other PSR-18 client is available)",
+        "guzzlehttp/psr7": "PSR-7/PSR-17 implementation (used as fallback for request creation)",
+        "illuminate/support": "Required for Laravel integration (ServiceProvider, Facade, config)",
+        "illuminate/routing": "Required for Laravel 3D Secure callback route handling",
+        "illuminate/cache": "Required for Laravel cache-based 3D Secure mapping",
+        "symfony/cache": "PSR-16 cache implementation for Symfony projects",
+        "symfony/event-dispatcher": "PSR-14 event dispatcher for Symfony projects"
     },
     "require-dev": {
         "orchestra/testbench": "^9.0|^10.0",

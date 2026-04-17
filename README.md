@@ -67,7 +67,8 @@ Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirm
 ## Gereksinimler
 
 - PHP 8.2+
-- Laravel 11 veya 12
+- PSR-18 HTTP Client (Guzzle, Symfony HttpClient, vb.)
+- Laravel 11/12 (opsiyonel — ServiceProvider, Facade, config, routes)
 
 ## Kurulum
 
@@ -75,7 +76,9 @@ Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirm
 composer require lbali/truepos
 ```
 
-Config dosyasını yayınlayın:
+### Laravel
+
+Config dosyasini yayinlayin:
 
 ```bash
 php artisan vendor:publish --tag=truepos-config
@@ -155,6 +158,47 @@ Event::listen(PaymentFailed::class, function (PaymentFailed $event) {
     $response = $event->response;
     // Hata yonetimi
 });
+```
+
+### Framework-Agnostic (Symfony, vanilla PHP, vb.)
+
+Laravel olmadan da kullanilabilir. Sadece PSR-18 HTTP client ve opsiyonel PSR-16 cache gerekir:
+
+```php
+use GuzzleHttp\Client;
+use TruePos\Builder\PaymentRequestBuilder;
+use TruePos\Factory\GatewayFactory;
+use TruePos\TruePosManager;
+use TruePos\ValueObjects\CreditCard;
+use TruePos\ValueObjects\Customer;
+
+$manager = new TruePosManager(
+    config: [
+        'default' => 'akbank',
+        'gateways' => [
+            'akbank' => [
+                'driver' => 'nestpay',
+                'client_id' => 'your_client_id',
+                'username' => 'your_username',
+                'password' => 'your_password',
+                'store_key' => 'your_store_key',
+                'store_type' => '3d',
+                'payment_url' => 'https://www.sanalakpos.com/fim/api',
+                'threed_gateway_url' => 'https://www.sanalakpos.com/fim/est3Dgate',
+            ],
+        ],
+    ],
+    factory: new GatewayFactory(),
+    httpClient: new Client(['timeout' => 30]),
+);
+
+$request = PaymentRequestBuilder::create()
+    ->card(new CreditCard('4546711234567894', '12', '30', '000'))
+    ->amount(100.00)
+    ->customer(new Customer(ip: '127.0.0.1'))
+    ->build();
+
+$response = $manager->gateway('akbank')->purchase($request);
 ```
 
 ### Gateway Degistirme

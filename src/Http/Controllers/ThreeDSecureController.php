@@ -6,7 +6,6 @@ namespace TruePos\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Cache;
 use TruePos\Contracts\ThreeDSecureInterface;
 use TruePos\Events\PaymentCompleted;
 use TruePos\Events\PaymentFailed;
@@ -22,7 +21,7 @@ final class ThreeDSecureController extends Controller
 
         event(new ThreeDSecureCallbackReceived($callbackData));
 
-        $gatewayName = $this->resolveGateway($callbackData);
+        $gatewayName = $this->resolveGateway($callbackData, $manager);
         $gateway = $manager->gateway($gatewayName);
 
         if (! $gateway instanceof ThreeDSecureInterface) {
@@ -44,7 +43,7 @@ final class ThreeDSecureController extends Controller
         return redirect($redirectUrl)->with('truepos_response', $response);
     }
 
-    private function resolveGateway(array $data): string
+    private function resolveGateway(array $data, TruePosManager $manager): string
     {
         $orderId = $data['oid']
             ?? $data['OrderId']
@@ -52,7 +51,7 @@ final class ThreeDSecureController extends Controller
             ?? $data['MerchantOrderId']
             ?? '';
 
-        $gateway = Cache::get("truepos_3d_{$orderId}");
+        $gateway = $manager->resolveThreeDMapping($orderId);
 
         if ($gateway === null) {
             throw ThreeDSecureException::gatewayNotResolved();

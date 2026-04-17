@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TruePos;
 
-use Illuminate\Contracts\Foundation\Application;
 use Psr\Http\Client\ClientInterface;
 use Psr\Log\LoggerInterface;
+use Psr\SimpleCache\CacheInterface;
 use TruePos\Contracts\GatewayInterface;
 use TruePos\Decorators\LoggingGateway;
 use TruePos\Decorators\RetryGateway;
@@ -19,9 +19,15 @@ final class TruePosManager
     /** @var array<string, GatewayInterface> */
     private array $gateways = [];
 
+    /**
+     * @param  array<string, mixed>  $config  Full truepos config array.
+     */
     public function __construct(
-        private readonly Application $app,
+        private readonly array $config,
         private readonly GatewayFactory $factory,
+        private readonly ClientInterface $httpClient,
+        private readonly ?LoggerInterface $logger = null,
+        private readonly ?CacheInterface $cache = null,
     ) {}
 
     /**
@@ -39,41 +45,50 @@ final class TruePosManager
      */
     public function registerThreeDMapping(string $orderId, string $gatewayName): void
     {
-        $ttl = config('truepos.threed_mapping_ttl', 3600);
+        $ttl = (int) ($this->config['threed_mapping_ttl'] ?? 3600);
 
-        cache()->put("truepos_3d_{$orderId}", $gatewayName, $ttl);
+        $this->cache?->set("truepos_3d_{$orderId}", $gatewayName, $ttl);
+    }
+
+    /**
+     * Resolve the gateway name for a 3DS callback by orderId.
+     */
+    public function resolveThreeDMapping(string $orderId): ?string
+    {
+        return $this->cache?->get("truepos_3d_{$orderId}");
     }
 
     private function resolve(string $name): GatewayInterface
     {
-        $config = config("truepos.gateways.{$name}");
+        $gatewayConfig = $this->config['gateways'][$name] ?? null;
 
-        if ($config === null) {
+        if ($gatewayConfig === null) {
             throw InvalidConfigurationException::gatewayNotConfigured($name);
         }
 
-        $driver = $config['driver'] ?? $name;
+        $driver = $gatewayConfig['driver'] ?? $name;
         $gatewayEnum = Gateway::from($driver);
 
         $gateway = $this->factory->create(
             gateway: $gatewayEnum,
-            config: $config,
-            httpClient: $this->app->make(ClientInterface::class),
+            config: $gatewayConfig,
+            httpClient: $this->httpClient,
         );
 
         // Apply decorators from config
-        if ($config['logging'] ?? config('truepos.logging', false)) {
-            $gateway = new LoggingGateway(
-                $gateway,
-                $this->app->make(LoggerInterface::class),
-            );
+        $loggingEnabled = $gatewayConfig['logging']
+            ?? $this->config['logging']
+            ?? false;
+
+        if ($loggingEnabled && $this->logger !== null) {
+            $gateway = new LoggingGateway($gateway, $this->logger);
         }
 
-        if ($config['retry'] ?? false) {
+        if ($gatewayConfig['retry'] ?? false) {
             $gateway = new RetryGateway(
                 $gateway,
-                $config['retry_attempts'] ?? 2,
-                $config['retry_delay_ms'] ?? 500,
+                $gatewayConfig['retry_attempts'] ?? 2,
+                $gatewayConfig['retry_delay_ms'] ?? 500,
             );
         }
 
@@ -82,7 +97,7 @@ final class TruePosManager
 
     private function defaultGateway(): string
     {
-        $default = config('truepos.default');
+        $default = $this->config['default'] ?? null;
 
         if ($default === null) {
             throw InvalidConfigurationException::noDefault();

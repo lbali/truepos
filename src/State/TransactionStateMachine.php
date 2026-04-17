@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TruePos\State;
 
+use Psr\EventDispatcher\EventDispatcherInterface;
 use TruePos\Enums\TransactionStatus;
 use TruePos\Events\TransactionStatusChanged;
 use TruePos\State\States\CancelledState;
@@ -19,8 +20,10 @@ final class TransactionStateMachine
 {
     private TransactionState $state;
 
-    public function __construct(TransactionStatus $initial = TransactionStatus::Pending)
-    {
+    public function __construct(
+        TransactionStatus $initial = TransactionStatus::Pending,
+        private readonly ?EventDispatcherInterface $dispatcher = null,
+    ) {
         $this->state = self::stateFromEnum($initial);
     }
 
@@ -34,13 +37,7 @@ final class TransactionStateMachine
         $previous = $this->state->status();
         $this->state = $newState;
 
-        try {
-            if (function_exists('event') && app()->bound('events')) {
-                event(new TransactionStatusChanged($previous, $newState->status()));
-            }
-        } catch (\Throwable) {
-            // Event dispatching is optional — works without Laravel container.
-        }
+        $this->dispatcher?->dispatch(new TransactionStatusChanged($previous, $newState->status()));
     }
 
     public function process(): void

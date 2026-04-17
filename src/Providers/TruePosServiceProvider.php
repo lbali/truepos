@@ -7,6 +7,8 @@ namespace TruePos\Providers;
 use GuzzleHttp\Client;
 use Illuminate\Support\ServiceProvider;
 use Psr\Http\Client\ClientInterface;
+use Psr\Log\LoggerInterface;
+use Psr\SimpleCache\CacheInterface;
 use TruePos\Contracts\GatewayInterface;
 use TruePos\Contracts\TransactionRepositoryInterface;
 use TruePos\Factory\GatewayFactory;
@@ -14,6 +16,13 @@ use TruePos\Repositories\EloquentTransactionRepository;
 use TruePos\Repositories\NullTransactionRepository;
 use TruePos\TruePosManager;
 
+/**
+ * Laravel service provider for TruePos.
+ *
+ * This is the only file that bridges the framework-agnostic core
+ * with Laravel's container, config, routes, and views.
+ * For non-Laravel usage, instantiate TruePosManager directly.
+ */
 final class TruePosServiceProvider extends ServiceProvider
 {
     public function register(): void
@@ -22,8 +31,24 @@ final class TruePosServiceProvider extends ServiceProvider
 
         $this->app->singleton(GatewayFactory::class);
 
+        // Register PSR-18 HTTP client if not already bound
+        if (! $this->app->bound(ClientInterface::class)) {
+            $this->app->bind(ClientInterface::class, function () {
+                return new Client([
+                    'timeout' => config('truepos.http_timeout', 30),
+                    'verify' => config('truepos.verify_ssl', true),
+                ]);
+            });
+        }
+
         $this->app->singleton(TruePosManager::class, function ($app) {
-            return new TruePosManager($app, $app->make(GatewayFactory::class));
+            return new TruePosManager(
+                config: config('truepos'),
+                factory: $app->make(GatewayFactory::class),
+                httpClient: $app->make(ClientInterface::class),
+                logger: $app->make(LoggerInterface::class),
+                cache: $app->make(CacheInterface::class),
+            );
         });
 
         $this->app->bind(GatewayInterface::class, function ($app) {
@@ -35,16 +60,6 @@ final class TruePosServiceProvider extends ServiceProvider
                 ? new EloquentTransactionRepository()
                 : new NullTransactionRepository();
         });
-
-        // Register PSR-18 HTTP client if not already bound
-        if (! $this->app->bound(ClientInterface::class)) {
-            $this->app->bind(ClientInterface::class, function () {
-                return new Client([
-                    'timeout' => config('truepos.http_timeout', 30),
-                    'verify' => config('truepos.verify_ssl', true),
-                ]);
-            });
-        }
     }
 
     public function boot(): void
