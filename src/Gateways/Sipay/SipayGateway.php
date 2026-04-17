@@ -166,8 +166,9 @@ final class SipayGateway extends AbstractGateway
     public function verifyThreeDCallback(array $callbackData): bool
     {
         $hash = $callbackData['hash_key'] ?? '';
+
         if (empty($hash)) {
-            return ! empty($callbackData['order_id'] ?? $callbackData['SipayOrderId'] ?? '');
+            return false;
         }
 
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());

@@ -180,8 +180,9 @@ final class CraftgateGateway extends AbstractGateway
     public function verifyThreeDCallback(array $callbackData): bool
     {
         $hash = $callbackData['hash'] ?? '';
+
         if (empty($hash)) {
-            return ! empty($callbackData['paymentId'] ?? '');
+            return false;
         }
 
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());

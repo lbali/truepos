@@ -160,8 +160,11 @@ final class EsnekPosGateway extends AbstractGateway
     public function verifyThreeDCallback(array $callbackData): bool
     {
         $hash = $callbackData['HASH'] ?? $callbackData['AUTH_HASH'] ?? '';
+
         if (empty($hash)) {
-            return ($callbackData['STATUS'] ?? '') === 'SUCCESS';
+            // Hash field is required for callback verification.
+            // Without it, we cannot prove the callback is genuine.
+            return false;
         }
 
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());

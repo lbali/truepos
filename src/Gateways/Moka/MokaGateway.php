@@ -188,8 +188,11 @@ final class MokaGateway extends AbstractGateway
     public function verifyThreeDCallback(array $callbackData): bool
     {
         $hash = $callbackData['hashValue'] ?? '';
+
         if (empty($hash)) {
-            return ! empty($callbackData['trxCode'] ?? '');
+            // Hash field is required for callback verification.
+            // Without it, we cannot prove the callback is genuine.
+            return false;
         }
 
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());

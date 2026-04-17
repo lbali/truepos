@@ -147,8 +147,13 @@ final class ParatikaGateway extends AbstractGateway
 
     protected function buildThreeDProvisionParameters(array $callbackData): array
     {
-        // Paratika completes 3DS internally, callback contains final result
-        return $callbackData;
+        // Server-to-server verification: query the transaction status from Paratika
+        return [
+            ...$this->authBlock(),
+            'ACTION' => 'QUERYTRANSACTION',
+            'PGTRANID' => $callbackData['pgTranId'] ?? '',
+            'MERCHANTPAYMENTID' => $callbackData['merchantPaymentId'] ?? '',
+        ];
     }
 
     protected function applyHash(array $parameters, string $hash): array
@@ -188,12 +193,26 @@ final class ParatikaGateway extends AbstractGateway
 
     protected function requiresProvisionAfterThreeD(): bool
     {
-        return false;
+        return true;
     }
 
     public function verifyThreeDCallback(array $callbackData): bool
     {
-        return ! empty($callbackData['responseCode'] ?? '');
+        $responseCode = $callbackData['responseCode'] ?? '';
+
+        if (empty($responseCode)) {
+            return false;
+        }
+
+        // Paratika callback must have a valid pgTranId from the gateway
+        // to prove it's genuine, not forged.
+        $pgTranId = $callbackData['pgTranId'] ?? '';
+
+        if (empty($pgTranId)) {
+            return false;
+        }
+
+        return $responseCode === '00';
     }
 
     private function authBlock(): array
