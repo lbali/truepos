@@ -8,6 +8,9 @@ use TruePos\Validation\ValidatorInterface;
 
 final class InstallmentValidator implements ValidatorInterface
 {
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function validate(array $data): array
     {
         $errors = [];

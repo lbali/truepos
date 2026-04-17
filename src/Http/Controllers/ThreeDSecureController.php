@@ -41,9 +41,15 @@ final class ThreeDSecureController extends Controller
             ? config('truepos.threed_success_url', '/')
             : config('truepos.threed_failure_url', '/');
 
-        return redirect($redirectUrl)->with('truepos_response', $response);
+        /** @var \Illuminate\Http\RedirectResponse $redirect */
+        $redirect = redirect($redirectUrl);
+
+        return $redirect->with('truepos_response', $response);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function resolveGateway(array $data, TruePosManager $manager): string
     {
         $orderId = $data['oid']

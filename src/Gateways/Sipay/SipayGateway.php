@@ -146,7 +146,7 @@ final class SipayGateway extends AbstractGateway
         return $this->config['threed_gateway_url'];
     }
 
-    protected function extractMdStatus(array $callbackData): ?string
+    protected function extractMdStatus(array $callbackData): string
     {
         $statusCode = $callbackData['status_code'] ?? $callbackData['SipayStatus'] ?? '';
 

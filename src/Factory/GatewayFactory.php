@@ -24,14 +24,7 @@ use TruePos\Serializers\XmlSerializer;
  */
 final class GatewayFactory
 {
-    /**
-     * @var array<string, array{
-     *     gateway: class-string<GatewayInterface>,
-     *     hashGenerator: class-string<HashGeneratorInterface>,
-     *     responseParser: class-string<ResponseParserInterface>,
-     *     serializer: SerializerInterface|class-string<SerializerInterface>,
-     * }>
-     */
+    /** @var array<string, array{gateway: string, hashGenerator: string, responseParser: string, serializer: SerializerInterface|string}> */
     private static array $registry = [];
 
     private static bool $defaultsRegistered = false;
@@ -54,6 +47,9 @@ final class GatewayFactory
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $config
+     */
     public function create(Gateway $gateway, array $config, ClientInterface $httpClient): GatewayInterface
     {
         self::ensureDefaultsRegistered();
@@ -65,13 +61,16 @@ final class GatewayFactory
             ? $entry['serializer']
             : new $entry['serializer']();
 
-        return new $entry['gateway'](
+        /** @var GatewayInterface $gatewayInstance */
+        $gatewayInstance = new $entry['gateway'](
             config: $config,
             serializer: $serializer,
             hashGenerator: new $entry['hashGenerator'](),
             responseParser: new $entry['responseParser'](),
             httpClient: $httpClient,
         );
+
+        return $gatewayInstance;
     }
 
     private static function ensureDefaultsRegistered(): void

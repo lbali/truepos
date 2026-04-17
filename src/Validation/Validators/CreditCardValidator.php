@@ -10,6 +10,9 @@ use TruePos\ValueObjects\CreditCard;
 
 final class CreditCardValidator implements ValidatorInterface
 {
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function validate(array $data): array
     {
         $errors = [];

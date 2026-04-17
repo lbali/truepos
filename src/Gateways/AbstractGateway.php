@@ -28,6 +28,9 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
     /** @var (\Closure(string, string): void)|null */
     private ?\Closure $onThreeDInitialized = null;
 
+    /**
+     * @param  array<string, mixed>  $config
+     */
     public function __construct(
         protected readonly array $config,
         protected readonly SerializerInterface $serializer,
@@ -153,6 +156,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
 
     // ─── 3D Secure: Complete ─────────────────────────────────
 
+    /** @param  array<string, mixed>  $callbackData */
     final public function completeThreeD(array $callbackData): PaymentResponse
     {
         if (! $this->verifyThreeDCallback($callbackData)) {
@@ -185,6 +189,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
 
     // ─── Core execution engine ───────────────────────────────
 
+    /** @param  array<string, mixed>  $parameters */
     private function executeTransaction(array $parameters, TransactionType $type): PaymentResponse
     {
         try {
@@ -221,6 +226,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
         return [];
     }
 
+    /** @param  array<string, string>  $headers */
     private function sendRequest(string $payload, string $url, array $headers = []): string
     {
         $allHeaders = array_merge(['Content-Type' => $this->serializer->contentType()], $headers);
@@ -259,30 +265,47 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
 
     // ─── Abstract hooks — each gateway must implement ────────
 
+    /** @return array<string, mixed> */
     abstract protected function buildPurchaseParameters(PaymentRequest $request): array;
 
+    /** @return array<string, mixed> */
     abstract protected function buildPreAuthParameters(PaymentRequest $request): array;
 
+    /** @return array<string, mixed> */
     abstract protected function buildPostAuthParameters(string $transactionId, Money $amount): array;
 
+    /** @return array<string, mixed> */
     abstract protected function buildRefundParameters(RefundRequest $request): array;
 
+    /** @return array<string, mixed> */
     abstract protected function buildCancelParameters(CancelRequest $request): array;
 
+    /** @return array<string, mixed> */
     abstract protected function buildStatusParameters(StatusRequest $request): array;
 
+    /** @return array<string, mixed> */
     abstract protected function buildThreeDFormParameters(PaymentRequest $request): array;
 
+    /**
+     * @param  array<string, mixed>  $callbackData
+     * @return array<string, mixed>
+     */
     abstract protected function buildThreeDProvisionParameters(array $callbackData): array;
 
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @return array<string, mixed>
+     */
     abstract protected function applyHash(array $parameters, string $hash): array;
 
+    /** @return array<string, mixed> */
     abstract protected function credentials(): array;
 
     abstract protected function endpoint(): string;
 
     abstract protected function threeDGatewayUrl(): string;
 
+    /** @param  array<string, mixed>  $callbackData */
     abstract protected function extractMdStatus(array $callbackData): ?string;
 
     abstract protected function isThreeDAuthSuccessful(?string $mdStatus): bool;

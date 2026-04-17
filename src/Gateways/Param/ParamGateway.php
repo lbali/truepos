@@ -163,7 +163,7 @@ final class ParamGateway extends AbstractGateway
         return $this->config['threed_gateway_url'];
     }
 
-    protected function extractMdStatus(array $callbackData): ?string
+    protected function extractMdStatus(array $callbackData): string
     {
         $result = $callbackData['Sonuc'] ?? $callbackData['TURKPOS_RETVAL_Sonuc'] ?? '0';
 

@@ -57,11 +57,11 @@ final readonly class CreditCard
     /**
      * Prevent accidental serialization of sensitive card data.
      *
-     * @return never
-     *
      * @throws \LogicException
+     *
+     * @return never
      */
-    public function __serialize(): array
+    public function __serialize(): never
     {
         throw new \LogicException('CreditCard must not be serialized — it contains sensitive cardholder data.');
     }

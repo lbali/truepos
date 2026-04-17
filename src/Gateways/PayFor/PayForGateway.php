@@ -194,6 +194,9 @@ final class PayForGateway extends AbstractGateway
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildBaseParameters(PaymentRequest $request, string $type): array
     {
         $params = [

@@ -41,6 +41,9 @@ final class XmlSerializer implements SerializerInterface
         return 'application/xml';
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function arrayToXml(array $data, \SimpleXMLElement $xml): void
     {
         foreach ($data as $key => $value) {
@@ -53,6 +56,9 @@ final class XmlSerializer implements SerializerInterface
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function xmlToArray(\SimpleXMLElement $xml): array
     {
         $result = [];

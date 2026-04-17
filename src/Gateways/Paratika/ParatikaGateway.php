@@ -215,6 +215,9 @@ final class ParatikaGateway extends AbstractGateway
         return $responseCode === '00';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function authBlock(): array
     {
         return [

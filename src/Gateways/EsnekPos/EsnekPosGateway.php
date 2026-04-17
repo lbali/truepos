@@ -172,6 +172,9 @@ final class EsnekPosGateway extends AbstractGateway
 
     // ─── Private helpers ─────────────────────────────────────
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildPaymentRequest(PaymentRequest $request): array
     {
         $params = [

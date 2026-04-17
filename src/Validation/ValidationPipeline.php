@@ -35,6 +35,7 @@ final class ValidationPipeline
      * All validators run — errors are collected, not short-circuited.
      *
      * @throws ValidationException
+     * @param  array<string, mixed>  $data
      */
     public function validate(array $data): void
     {

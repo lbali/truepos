@@ -87,6 +87,6 @@ final class RetryGateway implements GatewayInterface
             }
         }
 
-        throw $lastException;
+        throw $lastException ?? new GatewayException('All retry attempts exhausted.');
     }
 }

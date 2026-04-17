@@ -187,6 +187,9 @@ final class VakifbankGateway extends AbstractGateway
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildBaseParameters(PaymentRequest $request, string $txnType): array
     {
         $params = [

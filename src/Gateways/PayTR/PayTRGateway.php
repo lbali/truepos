@@ -66,7 +66,7 @@ final class PayTRGateway extends AbstractGateway
             'user_phone' => $request->customer?->phone ?? '',
             'merchant_ok_url' => $request->callbackUrl ?? $this->config['callback_url'] ?? '',
             'merchant_fail_url' => $request->callbackUrl ?? $this->config['callback_url'] ?? '',
-            'user_basket' => base64_encode(json_encode([
+            'user_basket' => base64_encode((string) json_encode([
                 [$request->orderId, $request->amount->toDecimal(), 1],
             ])),
             'debug_on' => ($this->config['debug'] ?? false) ? '1' : '0',

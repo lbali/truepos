@@ -23,7 +23,7 @@ final class PayForHashGenerator implements HashGeneratorInterface
             $hashStr = ($parameters['MbrId'] ?? '5')
                 . ($parameters['OrderId'] ?? '')
                 . ($parameters['PurchAmount'] ?? '')
-                . ($parameters['OkUrl'] ?? '')
+                . $parameters['OkUrl']
                 . ($parameters['FailUrl'] ?? '')
                 . ($parameters['TxnType'] ?? '')
                 . ($parameters['InstallmentCount'] ?? '')

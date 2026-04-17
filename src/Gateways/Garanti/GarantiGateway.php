@@ -265,6 +265,9 @@ final class GarantiGateway extends AbstractGateway
 
     // ─── Private helpers ─────────────────────────────────────
 
+    /**
+     * @return array<string, mixed>
+     */
     private function terminalBlock(): array
     {
         return [
@@ -280,6 +283,9 @@ final class GarantiGateway extends AbstractGateway
         return ($this->config['test_mode'] ?? false) ? 'TEST' : 'PROD';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildGvpRequest(PaymentRequest $request, string $txnType): array
     {
         return [

@@ -256,10 +256,12 @@ final class PosNetGateway extends AbstractGateway
             '840' => 'US',
             '978' => 'EU',
             '826' => 'GB',
-            default => 'TL',
         };
     }
 
+    /**
+     * @param  array<string, mixed>  $callbackData
+     */
     private function generateOosMac(array $callbackData): string
     {
         $encKey = $this->config['enc_key'] ?? '';

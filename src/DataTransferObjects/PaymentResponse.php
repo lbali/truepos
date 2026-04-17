@@ -11,6 +11,9 @@ use TruePos\ValueObjects\Money;
 
 final readonly class PaymentResponse
 {
+    /**
+     * @param  array<string, mixed>  $rawResponse
+     */
     public function __construct(
         public bool $isSuccessful,
         public TransactionStatus $status,
@@ -57,6 +60,9 @@ final readonly class PaymentResponse
         );
     }
 
+    /**
+     * @param  array<string, mixed>  $rawResponse
+     */
     public static function failed(
         Gateway $gateway,
         TransactionType $type,

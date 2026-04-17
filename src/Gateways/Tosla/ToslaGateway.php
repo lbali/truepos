@@ -212,6 +212,7 @@ final class ToslaGateway extends AbstractGateway
     /**
      * Build the common auth block present in every Tosla request.
      * timeSpan format: YYYYMMDDHHmmss
+     * @return array<string, mixed>
      */
     private function authBlock(): array
     {

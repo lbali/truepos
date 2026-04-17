@@ -9,6 +9,9 @@ use TruePos\Validation\ValidatorInterface;
 
 final class ThreeDCallbackValidator implements ValidatorInterface
 {
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function validate(array $data): array
     {
         $errors = [];

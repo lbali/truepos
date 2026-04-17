@@ -217,6 +217,9 @@ final class NestPayGateway extends AbstractGateway
         return hash_equals($calculated, $hash);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildBaseParameters(PaymentRequest $request, string $type): array
     {
         $params = [

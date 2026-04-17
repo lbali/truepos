@@ -12,6 +12,9 @@ use TruePos\ValueObjects\Money;
 
 final readonly class PaymentRequest
 {
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
     public function __construct(
         public Money $amount,
         public string $orderId,

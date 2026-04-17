@@ -14,10 +14,18 @@ interface HashGeneratorInterface
      * - Garanti: SHA-512 of SHA-512 of specific field concatenation
      * - PosNet: MAC using specific key derivation
      */
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @param  array<string, mixed>  $credentials
+     */
     public function generate(array $parameters, array $credentials): string;
 
     /**
      * Verify a hash received from the gateway callback.
+     */
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @param  array<string, mixed>  $credentials
      */
     public function verify(string $expected, array $parameters, array $credentials): bool;
 }

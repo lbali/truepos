@@ -102,10 +102,7 @@ final class LoggingGateway implements GatewayInterface, ThreeDSecureInterface
     }
 
     /**
-     * @template T
-     *
-     * @param  \Closure(): T  $operation
-     * @return T
+     * @param  \Closure(): PaymentResponse  $operation
      */
     private function logged(string $method, string $identifier, ?Money $amount, \Closure $operation): PaymentResponse
     {

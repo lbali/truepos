@@ -170,7 +170,7 @@ final class MokaGateway extends AbstractGateway
         return $this->config['threed_gateway_url'];
     }
 
-    protected function extractMdStatus(array $callbackData): ?string
+    protected function extractMdStatus(array $callbackData): string
     {
         return ($callbackData['isSuccessful'] ?? '') === '1' ? 'success' : 'failed';
     }
@@ -198,6 +198,9 @@ final class MokaGateway extends AbstractGateway
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function authBlock(): array
     {
         return [

@@ -9,6 +9,9 @@ use TruePos\ValueObjects\Money;
 
 final class AmountValidator implements ValidatorInterface
 {
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function validate(array $data): array
     {
         $errors = [];

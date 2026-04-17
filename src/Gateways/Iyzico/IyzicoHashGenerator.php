@@ -37,17 +37,18 @@ final class IyzicoHashGenerator implements HashGeneratorInterface
         $token = $parameters['token'] ?? '';
         $secretKey = $credentials['secretKey'] ?? '';
 
-        if (empty($token)) {
+        if ($token === '' || $token === '0') {
             return false;
         }
 
         // Verify using the callback token
-        return ! empty($token);
+        return true;
     }
 
     /**
      * Build iyzico PKI (Payment Key Identifier) request string.
      * Format: [key=value,key=value,...]
+     * @param  array<string, mixed>  $data
      */
     private function buildPkiString(array $data): string
     {

@@ -157,6 +157,10 @@ final class PaymentRequestBuilder
             'callbackUrl' => $this->callbackUrl,
         ]);
 
+        if ($this->amount === null) {
+            throw \TruePos\Exceptions\ValidationException::withErrors(['amount' => ['Amount is required.']]);
+        }
+
         return new PaymentRequest(
             amount: $this->amount,
             orderId: $orderId,
