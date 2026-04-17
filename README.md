@@ -4,9 +4,11 @@
 [![License](https://img.shields.io/github/license/lbali/truepos?style=flat-square)](LICENSE)
 [![PHP Version](https://img.shields.io/packagist/php-v/lbali/truepos?style=flat-square)](composer.json)
 
-Tüm Türk sanal POS sağlayıcılarını tek bir unified API altında birleştiren Laravel paketi.
+Tüm Türk sanal POS sağlayıcılarını tek bir unified API altında birleştiren, framework-agnostic PHP paketi. Laravel entegrasyonu dahil.
 
 Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirmek — kodunuz aynı kalır.
+
+> **Status: Beta** — Use in production after testing with your bank/acquirer credentials. 3DS provider callbacks are validated by hash where available; some providers (PosNet, Iyzico) verify during server-to-server completion.
 
 ## Desteklenen Sağlayıcılar
 
@@ -143,7 +145,7 @@ if ($response->isThreeDRedirect()) {
 }
 ```
 
-3D Secure callback'i otomatik olarak paket tarafından yönetilir. Sonucu dinlemek için Laravel event listener'ları kullanın:
+3D Secure callback'i Laravel'de otomatik yonetilir. Sonucu dinlemek icin event listener kullanin:
 
 ```php
 use TruePos\Events\PaymentCompleted;
@@ -307,7 +309,7 @@ Bu paket asagidaki OOP design pattern'lerini kullanir:
 | **Builder** | `PaymentRequestBuilder` — fluent, immutable |
 | **Adapter** | `ResponseParser` — banka cevaplarini normalize etme |
 | **Decorator** | `LoggingGateway`, `RetryGateway` |
-| **Observer** | Laravel Events |
+| **Observer** | PSR-14 Events (Laravel/Symfony uyumlu) |
 | **State** | `TransactionStateMachine` |
 | **Chain of Responsibility** | `ValidationPipeline` |
 | **Value Object** | `CreditCard`, `Money`, `Customer` |
@@ -322,19 +324,31 @@ composer lint        # Laravel Pint
 composer check       # Hepsi birden
 ```
 
+## Bilinen Kisitlamalar
+
+- Her gateway icin gercek banka/acquirer ortami farklilik gosterebilir. Production'a almadan once kendi banka credential'larinizla test edin.
+- PCI-DSS uyumlulugu merchant/uygulama tarafinin sorumlulugundadir. Bu paket kart verisini bellekte isler, saklamaz.
+- Kart verisini mumkunse 3D Host veya hosted payment form ile dogrudan bankada toplamak onerilir (`->threeDHost()` kullanin).
+- Banka API'leri zaman zaman breaking change yapabilir. Sorun yasarsaniz issue acin.
+
+## Guvenlik
+
+Guvenlik acigi bildirimi icin **public issue acmayin**. Detaylar icin [SECURITY.md](SECURITY.md) dosyasina bakin.
+
 ## Katkida Bulunma
 
-Yeni gateway eklemek icin:
+Detaylar icin [CONTRIBUTING.md](CONTRIBUTING.md) dosyasina bakin.
 
-1. `src/Gateways/YeniGateway/` dizininde 4 dosya olusturun:
+Kisa ozet — yeni gateway eklemek icin:
+
+1. `src/Gateways/YeniGateway/` dizininde 3 dosya olusturun:
    - `YeniGatewayGateway.php` (extends `AbstractGateway`)
-   - `YeniGatewaySerializer.php` (implements `SerializerInterface`)
    - `YeniGatewayHashGenerator.php` (implements `HashGeneratorInterface`)
    - `YeniGatewayResponseParser.php` (implements `ResponseParserInterface`)
 
 2. `src/Enums/Gateway.php`'ye yeni case ekleyin
 
-3. `src/Factory/GatewayFactory.php`'de match'e ekleyin
+3. `src/Factory/GatewayFactory.php`'de register edin
 
 4. `config/truepos.php`'ye ornek config ekleyin
 
