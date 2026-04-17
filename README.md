@@ -4,18 +4,18 @@
 [![License](https://img.shields.io/github/license/lbali/truepos?style=flat-square)](LICENSE)
 [![PHP Version](https://img.shields.io/packagist/php-v/lbali/truepos?style=flat-square)](composer.json)
 
-Tüm Türk sanal POS sağlayıcılarını tek bir unified API altında birleştiren, framework-agnostic PHP paketi. Laravel entegrasyonu dahil.
+Tüm Türk sanal POS sağlayıcılarını tek bir birleşik API altında toplayan, framework-bağımsız PHP paketi. Laravel entegrasyonu dahildir.
 
-Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirmek — kodunuz aynı kalır.
+Bir sağlayıcıdan diğerine geçmek için tek yapmanız gereken ayarları değiştirmek — kodunuz aynı kalır.
 
-> **Status: Beta** — Use in production after testing with your bank/acquirer credentials. 3DS provider callbacks are validated by hash where available; some providers (PosNet, Iyzico) verify during server-to-server completion.
+> **Durum: Beta** — Canlıya almadan önce kendi banka/ödeme kuruluşu bilgilerinizle test edin. 3DS geri dönüşleri mümkün olan yerlerde hash ile doğrulanır; bazı sağlayıcılarda (PosNet, Iyzico) doğrulama sunucudan sunucuya provizyon adımında yapılır.
 
 ## Desteklenen Sağlayıcılar
 
 ### Banka Sanal POS'ları
 
-| Sağlayıcı | Driver | Config Adı | Bankalar |
-|-----------|--------|------------|----------|
+| Sağlayıcı | Sürücü | Ayar Adı | Bankalar |
+|-----------|--------|----------|----------|
 | **NestPay (EST)** | `nestpay` | `akbank` `isbank` `ziraat` `halkbank` `teb` `denizbank` | Akbank, İş Bankası, Ziraat, Halkbank, TEB, Denizbank, Anadolubank, ING |
 | **Garanti GVP** | `garanti` | `garanti` | Garanti BBVA |
 | **PosNet** | `posnet` | `yapikredi` | Yapı Kredi |
@@ -25,8 +25,8 @@ Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirm
 
 ### Ödeme Kuruluşları
 
-| Sağlayıcı | Driver | Config Adı |
-|-----------|--------|------------|
+| Sağlayıcı | Sürücü | Ayar Adı |
+|-----------|--------|----------|
 | **iyzico** | `iyzico` | `iyzico` |
 | **Moka** | `moka` | `moka` |
 | **Sipay** | `sipay` | `sipay` |
@@ -39,8 +39,8 @@ Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirm
 
 ### Orkestratör
 
-| Sağlayıcı | Driver | Config Adı |
-|-----------|--------|------------|
+| Sağlayıcı | Sürücü | Ayar Adı |
+|-----------|--------|----------|
 | **Craftgate** | `craftgate` | `craftgate` |
 
 ### Desteklenen Özellikler
@@ -64,13 +64,13 @@ Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirm
 | **Lidio** | :white_check_mark: | :white_check_mark: | | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | **Craftgate** | :white_check_mark: | :white_check_mark: | | | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
-> NestPay driver'ı tek başına 8+ bankayı destekler. Toplam **20+ banka ve ödeme kuruluşu** tek API ile kullanılabilir.
+> NestPay sürücüsü tek başına 8+ bankayı destekler. Toplamda **20+ banka ve ödeme kuruluşu** tek API ile kullanılabilir.
 
 ## Gereksinimler
 
 - PHP 8.2+
-- PSR-18 HTTP Client (Guzzle, Symfony HttpClient, vb.)
-- Laravel 11/12 (opsiyonel — ServiceProvider, Facade, config, routes)
+- PSR-18 HTTP İstemcisi (Guzzle, Symfony HttpClient vb.)
+- Laravel 11/12 (isteğe bağlı — ServiceProvider, Facade, ayar dosyası, rotalar)
 
 ## Kurulum
 
@@ -78,15 +78,15 @@ Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirm
 composer require lbali/truepos
 ```
 
-### Laravel
+### Laravel Kurulumu
 
-Config dosyasini yayinlayin:
+Ayar dosyasını yayınlayın:
 
 ```bash
 php artisan vendor:publish --tag=truepos-config
 ```
 
-İşlem loglaması istiyorsanız migration'ları da yayınlayın:
+İşlem kaydı tutmak istiyorsanız migration'ları da yayınlayın:
 
 ```bash
 php artisan vendor:publish --tag=truepos-migrations
@@ -109,7 +109,7 @@ $request = PaymentRequestBuilder::create()
         expiryMonth: '12',
         expiryYear: '30',
         cvv: '000',
-        holderName: 'Ali Yilmaz',
+        holderName: 'Ali Yılmaz',
     ))
     ->amount(250.50)
     ->installment(3)
@@ -145,7 +145,7 @@ if ($response->isThreeDRedirect()) {
 }
 ```
 
-3D Secure callback'i Laravel'de otomatik yonetilir. Sonucu dinlemek icin event listener kullanin:
+3D Secure geri dönüşü Laravel'de otomatik yönetilir. Sonucu dinlemek için olay dinleyicileri kullanın:
 
 ```php
 use TruePos\Events\PaymentCompleted;
@@ -153,18 +153,18 @@ use TruePos\Events\PaymentFailed;
 
 Event::listen(PaymentCompleted::class, function (PaymentCompleted $event) {
     $response = $event->response;
-    // Siparisi onayla
+    // Siparişi onayla
 });
 
 Event::listen(PaymentFailed::class, function (PaymentFailed $event) {
     $response = $event->response;
-    // Hata yonetimi
+    // Hata yönetimi
 });
 ```
 
-### Framework-Agnostic (Symfony, vanilla PHP, vb.)
+### Framework-Bağımsız Kullanım (Symfony, saf PHP vb.)
 
-Laravel olmadan da kullanilabilir. Sadece PSR-18 HTTP client ve opsiyonel PSR-16 cache gerekir:
+Laravel olmadan da kullanılabilir. Sadece PSR-18 HTTP istemcisi ve isteğe bağlı PSR-16 önbellek gerekir:
 
 ```php
 use GuzzleHttp\Client;
@@ -203,9 +203,9 @@ $request = PaymentRequestBuilder::create()
 $response = $manager->gateway('akbank')->purchase($request);
 ```
 
-### Gateway Degistirme
+### Sağlayıcı Değiştirme
 
-Ayni kod, farkli banka:
+Aynı kod, farklı banka:
 
 ```php
 TruePos::gateway('akbank')->purchase($request);
@@ -215,11 +215,11 @@ TruePos::gateway('yapikredi')->purchase($request);
 TruePos::gateway('iyzico')->purchase($request);
 TruePos::gateway('tosla')->purchase($request);
 
-// Veya .env'den default gateway kullan:
+// Veya .env'den varsayılan sağlayıcıyı kullan:
 TruePos::gateway()->purchase($request);
 ```
 
-### Iade
+### İade
 
 ```php
 use TruePos\DataTransferObjects\RefundRequest;
@@ -227,11 +227,11 @@ use TruePos\ValueObjects\Money;
 
 $response = TruePos::gateway('akbank')->refund(new RefundRequest(
     orderId: 'ORD-12345',
-    amount: Money::fromDecimal(50.00), // Kismi iade
+    amount: Money::fromDecimal(50.00), // Kısmi iade
 ));
 ```
 
-### Iptal
+### İptal
 
 ```php
 use TruePos\DataTransferObjects\CancelRequest;
@@ -241,10 +241,10 @@ $response = TruePos::gateway('akbank')->cancel(new CancelRequest(
 ));
 ```
 
-### On Provizyon + Kapama
+### Ön Provizyon + Kapama
 
 ```php
-// Tutari bloke et
+// Tutarı bloke et
 $request = PaymentRequestBuilder::create()
     ->card($card)
     ->amount(1000.00)
@@ -253,16 +253,16 @@ $request = PaymentRequestBuilder::create()
 
 $holdResponse = TruePos::gateway()->preAuthorize($request);
 
-// Daha sonra: kapat (daha dusuk tutarla da olabilir)
+// Daha sonra: kapat (daha düşük tutarla da olabilir)
 $captureResponse = TruePos::gateway()->postAuthorize(
     transactionId: $holdResponse->transactionId,
     amount: Money::fromDecimal(800.00),
 );
 ```
 
-## Konfigürasyon
+## Yapılandırma
 
-`.env` dosyaniza banka bilgilerinizi ekleyin:
+`.env` dosyanıza banka bilgilerinizi ekleyin:
 
 ```env
 TRUEPOS_GATEWAY=akbank
@@ -279,7 +279,7 @@ GARANTI_MERCHANT_ID=your_merchant_id
 GARANTI_PROV_PASSWORD=your_password
 GARANTI_STORE_KEY=your_store_key
 
-# Yapi Kredi (PosNet)
+# Yapı Kredi (PosNet)
 YAPIKREDI_MERCHANT_ID=your_merchant_id
 YAPIKREDI_TERMINAL_ID=your_terminal_id
 YAPIKREDI_POSNET_ID=your_posnet_id
@@ -295,64 +295,64 @@ TOSLA_API_USER=your_api_user
 TOSLA_API_PASS=your_api_pass
 ```
 
-Tüm gateway konfigürasyonları için `config/truepos.php` dosyasini inceleyin.
+Tüm sağlayıcı yapılandırmaları için `config/truepos.php` dosyasını inceleyin.
 
 ## Mimari
 
-Bu paket asagidaki OOP design pattern'lerini kullanir:
+Bu paket aşağıdaki OOP tasarım kalıplarını kullanır:
 
-| Pattern | Kullanim Yeri |
-|---------|--------------|
-| **Template Method** | `AbstractGateway` — odeme akisinin iskeleti |
-| **Strategy** | `HashGenerator`, `Serializer`, `ResponseParser` |
-| **Factory Method** | `GatewayFactory` — config'den gateway yaratma |
-| **Builder** | `PaymentRequestBuilder` — fluent, immutable |
-| **Adapter** | `ResponseParser` — banka cevaplarini normalize etme |
-| **Decorator** | `LoggingGateway`, `RetryGateway` |
-| **Observer** | PSR-14 Events (Laravel/Symfony uyumlu) |
-| **State** | `TransactionStateMachine` |
-| **Chain of Responsibility** | `ValidationPipeline` |
-| **Value Object** | `CreditCard`, `Money`, `Customer` |
-| **Null Object** | `NullTransactionRepository` |
+| Kalıp | Kullanım Yeri |
+|-------|--------------|
+| **Şablon Yöntem** | `AbstractGateway` — ödeme akışının iskeleti |
+| **Strateji** | `HashGenerator`, `Serializer`, `ResponseParser` |
+| **Fabrika Yöntemi** | `GatewayFactory` — yapılandırmadan sağlayıcı oluşturma |
+| **İnşaatçı** | `PaymentRequestBuilder` — akıcı, değişmez |
+| **Uyarlayıcı** | `ResponseParser` — banka yanıtlarını normalleştirme |
+| **Dekoratör** | `LoggingGateway`, `RetryGateway` |
+| **Gözlemci** | PSR-14 olayları (Laravel/Symfony uyumlu) |
+| **Durum** | `TransactionStateMachine` |
+| **Sorumluluk Zinciri** | `ValidationPipeline` |
+| **Değer Nesnesi** | `CreditCard`, `Money`, `Customer` |
+| **Boş Nesne** | `NullTransactionRepository` |
 
 ## Test
 
 ```bash
 composer test        # PHPUnit
-composer analyse     # PHPStan level 8
+composer analyse     # PHPStan seviye 8
 composer lint        # Laravel Pint
 composer check       # Hepsi birden
 ```
 
-## Bilinen Kisitlamalar
+## Bilinen Kısıtlamalar
 
-- Her gateway icin gercek banka/acquirer ortami farklilik gosterebilir. Production'a almadan once kendi banka credential'larinizla test edin.
-- PCI-DSS uyumlulugu merchant/uygulama tarafinin sorumlulugundadir. Bu paket kart verisini bellekte isler, saklamaz.
-- Kart verisini mumkunse 3D Host veya hosted payment form ile dogrudan bankada toplamak onerilir (`->threeDHost()` kullanin).
-- Banka API'leri zaman zaman breaking change yapabilir. Sorun yasarsaniz issue acin.
+- Her sağlayıcı için gerçek banka/ödeme kuruluşu ortamı farklılık gösterebilir. Canlıya almadan önce kendi banka bilgilerinizle test edin.
+- PCI-DSS uyumluluğu üye işyeri/uygulama tarafının sorumluluğundadır. Bu paket kart verisini bellekte işler, saklamaz.
+- Kart verisini mümkünse 3D Host veya barındırılan ödeme formu ile doğrudan bankada toplamak önerilir (`->threeDHost()` kullanın).
+- Banka API'leri zaman zaman geriye uyumsuz değişiklik yapabilir. Sorun yaşarsanız issue açın.
 
-## Guvenlik
+## Güvenlik
 
-Guvenlik acigi bildirimi icin **public issue acmayin**. Detaylar icin [SECURITY.md](SECURITY.md) dosyasina bakin.
+Güvenlik açığı bildirimi için **public issue açmayın**. Ayrıntılar için [SECURITY.md](SECURITY.md) dosyasına bakın.
 
-## Katkida Bulunma
+## Katkıda Bulunma
 
-Detaylar icin [CONTRIBUTING.md](CONTRIBUTING.md) dosyasina bakin.
+Ayrıntılar için [CONTRIBUTING.md](CONTRIBUTING.md) dosyasına bakın.
 
-Kisa ozet — yeni gateway eklemek icin:
+Kısa özet — yeni sağlayıcı eklemek için:
 
-1. `src/Gateways/YeniGateway/` dizininde 3 dosya olusturun:
-   - `YeniGatewayGateway.php` (extends `AbstractGateway`)
-   - `YeniGatewayHashGenerator.php` (implements `HashGeneratorInterface`)
-   - `YeniGatewayResponseParser.php` (implements `ResponseParserInterface`)
+1. `src/Gateways/YeniSaglayici/` dizininde 3 dosya oluşturun:
+   - `YeniSaglayiciGateway.php` (extends `AbstractGateway`)
+   - `YeniSaglayiciHashGenerator.php` (implements `HashGeneratorInterface`)
+   - `YeniSaglayiciResponseParser.php` (implements `ResponseParserInterface`)
 
-2. `src/Enums/Gateway.php`'ye yeni case ekleyin
+2. `src/Enums/Gateway.php` dosyasına yeni case ekleyin
 
-3. `src/Factory/GatewayFactory.php`'de register edin
+3. `src/Factory/GatewayFactory.php` dosyasında kayıt edin
 
-4. `config/truepos.php`'ye ornek config ekleyin
+4. `config/truepos.php` dosyasına örnek yapılandırma ekleyin
 
-5. `tests/` altina testleri ve fixture'lari yazin
+5. `tests/` altına testleri ve fixture'ları yazın
 
 ## Lisans
 

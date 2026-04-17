@@ -1,17 +1,17 @@
-# Security Policy
+# Güvenlik Politikası
 
-## Reporting a Vulnerability
+## Güvenlik Açığı Bildirimi
 
-If you discover a security vulnerability in TruePos, please report it responsibly.
+TruePos'ta bir güvenlik açığı keşfederseniz, lütfen sorumlu bir şekilde bildirin.
 
-**Do NOT open a public issue.**
+**Public issue açmayın.**
 
-Email: leventbali@gmail.com
+E-posta: leventbali@gmail.com
 
-We will acknowledge receipt within 48 hours and provide a detailed response within 7 days.
+Bildiriminizi 48 saat içinde onaylayacak, 7 gün içinde ayrıntılı yanıt vereceğiz.
 
-## Supported Versions
+## Desteklenen Sürümler
 
-| Version | Supported |
-|---------|-----------|
-| 1.x     | Yes       |
+| Sürüm | Destekleniyor |
+|-------|--------------|
+| 0.x   | Evet          |

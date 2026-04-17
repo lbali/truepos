@@ -1,15 +1,15 @@
 ---
-name: Feature Request
-about: Suggest a new gateway or feature
-title: "[FEATURE] "
-labels: enhancement
+name: Özellik İsteği
+about: Yeni bir sağlayıcı veya özellik önerin
+title: "[ÖNERİ] "
+labels: geliştirme
 ---
 
-**Is this a new gateway request?**
-If yes, which provider? Link to their API docs if available.
+**Yeni sağlayıcı isteği mi?**
+Evetse hangi sağlayıcı? Varsa API doküman bağlantısını ekleyin.
 
-**Describe the feature**
-A clear description of what you'd like.
+**Özelliği açıklayın**
+Ne istediğinizi kısa ve net bir şekilde açıklayın.
 
-**Use case**
-Why is this needed? What problem does it solve?
+**Kullanım senaryosu**
+Bu neden gerekli? Hangi sorunu çözüyor?

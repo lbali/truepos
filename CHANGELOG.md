@@ -1,21 +1,23 @@
-# Changelog
+# Değişiklik Günlüğü
 
-All notable changes to this project will be documented in this file.
+Bu projedeki önemli değişiklikler burada belgelenir.
 
-## [Unreleased]
+## [0.1.0-beta] - 2026-04-17
 
-### Added
-- 16 payment gateway integrations
-- Framework-agnostic core with optional Laravel integration
-- 3D Secure callback handling with auto gateway mapping
-- Fluent PaymentRequestBuilder
-- Transaction state machine
-- Logging and Retry decorators
-- Validation pipeline
-- Comprehensive test suite (73 tests)
+### Eklenenler
+- 16 ödeme sağlayıcı entegrasyonu (NestPay, Garanti, PosNet, PayFor, Vakıfbank, KuveytTürk, PayTR, iyzico, Moka, Sipay, Param, Tosla, Craftgate, EsnekPOS, Paratika, Lidio)
+- Framework-bağımsız çekirdek, isteğe bağlı Laravel entegrasyonu
+- Otomatik sağlayıcı eşleme ile 3D Secure geri dönüş yönetimi
+- Akıcı ve değişmez PaymentRequestBuilder
+- İşlem durum makinesi (TransactionStateMachine)
+- Loglama ve yeniden deneme dekoratörleri
+- Doğrulama hattı (ValidationPipeline)
+- Kapsamlı test paketi (73 test, 119 doğrulama)
+- PHPStan seviye 8 tam uyumluluk
 
-### Security
-- Fail-closed 3DS callback verification
-- CreditCard __debugInfo masking
-- Sensitive data redaction for events and database
-- Non-idempotent operation retry protection
+### Güvenlik
+- Tüm sağlayıcılarda fail-closed 3DS geri dönüş doğrulaması
+- CreditCard __debugInfo ile hassas veri maskeleme
+- Olay ve veritabanı için hassas veri redaksiyonu (SensitiveDataRedactor)
+- İdempotent olmayan işlemlerde yeniden deneme koruması
+- Canlı ortamda SSL doğrulaması zorunluluğu

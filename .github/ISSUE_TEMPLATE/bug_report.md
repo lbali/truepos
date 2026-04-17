@@ -1,26 +1,26 @@
 ---
-name: Bug Report
-about: Report a bug or unexpected behavior
-title: "[BUG] "
-labels: bug
+name: Hata Bildirimi
+about: Bir hata veya beklenmeyen davranış bildirin
+title: "[HATA] "
+labels: hata
 ---
 
-**Gateway**: (e.g., akbank, garanti, iyzico)
-**Payment Model**: (regular, 3d, 3d_pay, 3d_host)
-**PHP Version**:
-**Laravel Version** (if applicable):
+**Sağlayıcı**: (ör. akbank, garanti, iyzico)
+**Ödeme Modeli**: (regular, 3d, 3d_pay, 3d_host)
+**PHP Sürümü**:
+**Laravel Sürümü** (varsa):
 
-**Describe the bug**
-A clear description of what the bug is.
+**Hatayı açıklayın**
+Hatanın ne olduğunu kısa ve net bir şekilde açıklayın.
 
-**Steps to reproduce**
+**Yeniden üretme adımları**
 1. ...
 2. ...
 
-**Expected behavior**
-What you expected to happen.
+**Beklenen davranış**
+Ne olmasını bekliyordunuz?
 
-**Error message / Response**
+**Hata mesajı / Yanıt**
 ```
-Paste error or gateway response here (redact any sensitive data).
+Hata mesajını veya sağlayıcı yanıtını buraya yapıştırın (hassas verileri gizleyin).
 ```

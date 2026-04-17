@@ -1,35 +1,35 @@
-# Contributing to TruePos
+# TruePos'a Katkıda Bulunma
 
-## Adding a New Gateway
+## Yeni Sağlayıcı Ekleme
 
-1. Create 3 files in `src/Gateways/YourGateway/`:
-   - `YourGatewayGateway.php` (extends `AbstractGateway`)
-   - `YourGatewayHashGenerator.php` (implements `HashGeneratorInterface`)
-   - `YourGatewayResponseParser.php` (implements `ResponseParserInterface`)
+1. `src/Gateways/YeniSaglayici/` dizininde 3 dosya oluşturun:
+   - `YeniSaglayiciGateway.php` (extends `AbstractGateway`)
+   - `YeniSaglayiciHashGenerator.php` (implements `HashGeneratorInterface`)
+   - `YeniSaglayiciResponseParser.php` (implements `ResponseParserInterface`)
 
-2. Add a new case to `src/Enums/Gateway.php`
+2. `src/Enums/Gateway.php` dosyasına yeni case ekleyin
 
-3. Register in `src/Factory/GatewayFactory.php` via `ensureDefaultsRegistered()`
+3. `src/Factory/GatewayFactory.php` içinde `ensureDefaultsRegistered()` ile kayıt edin
 
-4. Add config example to `config/truepos.php`
+4. `config/truepos.php` dosyasına örnek yapılandırma ekleyin
 
-5. Add tests and fixtures under `tests/`
+5. `tests/` altına testleri ve fixture'ları yazın
 
-## Running Tests
+## Testleri Çalıştırma
 
 ```bash
 composer test      # PHPUnit
-composer analyse   # PHPStan
+composer analyse   # PHPStan seviye 8
 composer lint      # Laravel Pint
-composer check     # All of the above
+composer check     # Hepsi birden
 ```
 
-## Code Style
+## Kod Stili
 
-This project uses Laravel Pint. Run `composer lint` before submitting.
+Bu proje Laravel Pint kullanır. Göndermeden önce `composer lint` çalıştırın.
 
-## Pull Requests
+## Pull Request Kuralları
 
-- One feature per PR
-- Include tests
-- Follow existing patterns
+- Her PR tek bir özellik veya düzeltme içermeli
+- Testler dahil edilmeli
+- Mevcut kalıplara uygun olunmalı
