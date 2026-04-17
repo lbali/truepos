@@ -6,190 +6,169 @@ namespace TruePos\Factory;
 
 use Psr\Http\Client\ClientInterface;
 use TruePos\Contracts\GatewayInterface;
+use TruePos\Contracts\HashGeneratorInterface;
+use TruePos\Contracts\ResponseParserInterface;
+use TruePos\Contracts\SerializerInterface;
 use TruePos\Enums\Gateway;
 use TruePos\Exceptions\InvalidConfigurationException;
-use TruePos\Gateways\Garanti\GarantiGateway;
-use TruePos\Gateways\Garanti\GarantiHashGenerator;
-use TruePos\Gateways\Garanti\GarantiResponseParser;
-use TruePos\Gateways\Garanti\GarantiSerializer;
-use TruePos\Gateways\NestPay\NestPayGateway;
-use TruePos\Gateways\NestPay\NestPayHashGenerator;
-use TruePos\Gateways\NestPay\NestPayResponseParser;
-use TruePos\Gateways\NestPay\NestPaySerializer;
-use TruePos\Gateways\PosNet\PosNetGateway;
-use TruePos\Gateways\PosNet\PosNetHashGenerator;
-use TruePos\Gateways\PosNet\PosNetResponseParser;
-use TruePos\Gateways\PosNet\PosNetSerializer;
-use TruePos\Gateways\PayFor\PayForGateway;
-use TruePos\Gateways\PayFor\PayForHashGenerator;
-use TruePos\Gateways\PayFor\PayForResponseParser;
-use TruePos\Gateways\PayFor\PayForSerializer;
-use TruePos\Gateways\Vakifbank\VakifbankGateway;
-use TruePos\Gateways\Vakifbank\VakifbankHashGenerator;
-use TruePos\Gateways\Vakifbank\VakifbankResponseParser;
-use TruePos\Gateways\Vakifbank\VakifbankSerializer;
-use TruePos\Gateways\KuveytTurk\KuveytTurkGateway;
-use TruePos\Gateways\KuveytTurk\KuveytTurkHashGenerator;
-use TruePos\Gateways\KuveytTurk\KuveytTurkResponseParser;
-use TruePos\Gateways\KuveytTurk\KuveytTurkSerializer;
-use TruePos\Gateways\PayTR\PayTRGateway;
-use TruePos\Gateways\PayTR\PayTRHashGenerator;
-use TruePos\Gateways\PayTR\PayTRResponseParser;
-use TruePos\Gateways\PayTR\PayTRSerializer;
-use TruePos\Gateways\Iyzico\IyzicoGateway;
-use TruePos\Gateways\Iyzico\IyzicoHashGenerator;
-use TruePos\Gateways\Iyzico\IyzicoResponseParser;
-use TruePos\Gateways\Iyzico\IyzicoSerializer;
-use TruePos\Gateways\Moka\MokaGateway;
-use TruePos\Gateways\Moka\MokaHashGenerator;
-use TruePos\Gateways\Moka\MokaResponseParser;
-use TruePos\Gateways\Moka\MokaSerializer;
-use TruePos\Gateways\Sipay\SipayGateway;
-use TruePos\Gateways\Sipay\SipayHashGenerator;
-use TruePos\Gateways\Sipay\SipayResponseParser;
-use TruePos\Gateways\Sipay\SipaySerializer;
-use TruePos\Gateways\Param\ParamGateway;
-use TruePos\Gateways\Param\ParamHashGenerator;
-use TruePos\Gateways\Param\ParamResponseParser;
-use TruePos\Gateways\Param\ParamSerializer;
-use TruePos\Gateways\Tosla\ToslaGateway;
-use TruePos\Gateways\Tosla\ToslaHashGenerator;
-use TruePos\Gateways\Tosla\ToslaResponseParser;
-use TruePos\Gateways\Tosla\ToslaSerializer;
-use TruePos\Gateways\Craftgate\CraftgateGateway;
-use TruePos\Gateways\Craftgate\CraftgateHashGenerator;
-use TruePos\Gateways\Craftgate\CraftgateResponseParser;
-use TruePos\Gateways\Craftgate\CraftgateSerializer;
-use TruePos\Gateways\EsnekPos\EsnekPosGateway;
-use TruePos\Gateways\EsnekPos\EsnekPosHashGenerator;
-use TruePos\Gateways\EsnekPos\EsnekPosResponseParser;
-use TruePos\Gateways\EsnekPos\EsnekPosSerializer;
-use TruePos\Gateways\Paratika\ParatikaGateway;
-use TruePos\Gateways\Paratika\ParatikaHashGenerator;
-use TruePos\Gateways\Paratika\ParatikaResponseParser;
-use TruePos\Gateways\Paratika\ParatikaSerializer;
-use TruePos\Gateways\Lidio\LidioGateway;
-use TruePos\Gateways\Lidio\LidioHashGenerator;
-use TruePos\Gateways\Lidio\LidioResponseParser;
-use TruePos\Gateways\Lidio\LidioSerializer;
+use TruePos\Serializers\FormSerializer;
+use TruePos\Serializers\JsonSerializer;
+use TruePos\Serializers\XmlSerializer;
 
+/**
+ * Registry-based gateway factory.
+ *
+ * Each gateway registers its components (serializer, hash generator, response parser,
+ * gateway class) via the static registry. New gateways can be added without modifying
+ * this class — just call GatewayFactory::register() from a service provider.
+ */
 final class GatewayFactory
 {
+    /**
+     * @var array<string, array{
+     *     gateway: class-string<GatewayInterface>,
+     *     hashGenerator: class-string<HashGeneratorInterface>,
+     *     responseParser: class-string<ResponseParserInterface>,
+     *     serializer: SerializerInterface|class-string<SerializerInterface>,
+     * }>
+     */
+    private static array $registry = [];
+
+    private static bool $defaultsRegistered = false;
+
+    /**
+     * Register a gateway's components.
+     */
+    public static function register(
+        Gateway $gateway,
+        string $gatewayClass,
+        string $hashGeneratorClass,
+        string $responseParserClass,
+        SerializerInterface|string $serializer,
+    ): void {
+        self::$registry[$gateway->value] = [
+            'gateway' => $gatewayClass,
+            'hashGenerator' => $hashGeneratorClass,
+            'responseParser' => $responseParserClass,
+            'serializer' => $serializer,
+        ];
+    }
+
     public function create(Gateway $gateway, array $config, ClientInterface $httpClient): GatewayInterface
     {
-        return match ($gateway) {
-            Gateway::NestPay => new NestPayGateway(
-                config: $config,
-                serializer: new NestPaySerializer(),
-                hashGenerator: new NestPayHashGenerator(),
-                responseParser: new NestPayResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Garanti => new GarantiGateway(
-                config: $config,
-                serializer: new GarantiSerializer(),
-                hashGenerator: new GarantiHashGenerator(),
-                responseParser: new GarantiResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::PosNet => new PosNetGateway(
-                config: $config,
-                serializer: new PosNetSerializer(),
-                hashGenerator: new PosNetHashGenerator(),
-                responseParser: new PosNetResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::PayFor => new PayForGateway(
-                config: $config,
-                serializer: new PayForSerializer(),
-                hashGenerator: new PayForHashGenerator(),
-                responseParser: new PayForResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Vakifbank => new VakifbankGateway(
-                config: $config,
-                serializer: new VakifbankSerializer(),
-                hashGenerator: new VakifbankHashGenerator(),
-                responseParser: new VakifbankResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::KuveytTurk => new KuveytTurkGateway(
-                config: $config,
-                serializer: new KuveytTurkSerializer(),
-                hashGenerator: new KuveytTurkHashGenerator(),
-                responseParser: new KuveytTurkResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::PayTR => new PayTRGateway(
-                config: $config,
-                serializer: new PayTRSerializer(),
-                hashGenerator: new PayTRHashGenerator(),
-                responseParser: new PayTRResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Iyzico => new IyzicoGateway(
-                config: $config,
-                serializer: new IyzicoSerializer(),
-                hashGenerator: new IyzicoHashGenerator(),
-                responseParser: new IyzicoResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Moka => new MokaGateway(
-                config: $config,
-                serializer: new MokaSerializer(),
-                hashGenerator: new MokaHashGenerator(),
-                responseParser: new MokaResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Sipay => new SipayGateway(
-                config: $config,
-                serializer: new SipaySerializer(),
-                hashGenerator: new SipayHashGenerator(),
-                responseParser: new SipayResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Param => new ParamGateway(
-                config: $config,
-                serializer: new ParamSerializer(),
-                hashGenerator: new ParamHashGenerator(),
-                responseParser: new ParamResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Tosla => new ToslaGateway(
-                config: $config,
-                serializer: new ToslaSerializer(),
-                hashGenerator: new ToslaHashGenerator(),
-                responseParser: new ToslaResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Craftgate => new CraftgateGateway(
-                config: $config,
-                serializer: new CraftgateSerializer(),
-                hashGenerator: new CraftgateHashGenerator(),
-                responseParser: new CraftgateResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::EsnekPos => new EsnekPosGateway(
-                config: $config,
-                serializer: new EsnekPosSerializer(),
-                hashGenerator: new EsnekPosHashGenerator(),
-                responseParser: new EsnekPosResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Paratika => new ParatikaGateway(
-                config: $config,
-                serializer: new ParatikaSerializer(),
-                hashGenerator: new ParatikaHashGenerator(),
-                responseParser: new ParatikaResponseParser(),
-                httpClient: $httpClient,
-            ),
-            Gateway::Lidio => new LidioGateway(
-                config: $config,
-                serializer: new LidioSerializer(),
-                hashGenerator: new LidioHashGenerator(),
-                responseParser: new LidioResponseParser(),
-                httpClient: $httpClient,
-            ),
+        self::ensureDefaultsRegistered();
+
+        $entry = self::$registry[$gateway->value]
+            ?? throw InvalidConfigurationException::gatewayNotConfigured($gateway->value);
+
+        $serializer = $entry['serializer'] instanceof SerializerInterface
+            ? $entry['serializer']
+            : new $entry['serializer']();
+
+        return new $entry['gateway'](
+            config: $config,
+            serializer: $serializer,
+            hashGenerator: new $entry['hashGenerator'](),
+            responseParser: new $entry['responseParser'](),
+            httpClient: $httpClient,
+        );
+    }
+
+    private static function ensureDefaultsRegistered(): void
+    {
+        if (self::$defaultsRegistered) {
+            return;
+        }
+
+        self::$defaultsRegistered = true;
+
+        // ─── Bank gateways (XML) ─────────────────────────────
+        self::registerXml(Gateway::NestPay, 'CC5Request');
+        self::registerXml(Gateway::Garanti, 'GVPSRequest');
+        self::registerXml(Gateway::PosNet, 'posnetRequest');
+        self::registerXml(Gateway::PayFor, 'PayforRequest');
+        self::registerXml(Gateway::Vakifbank, 'VposRequest');
+        self::registerXml(Gateway::KuveytTurk, 'KuveytTurkVPosMessage');
+
+        // ─── JSON API gateways ───────────────────────────────
+        self::registerJson(Gateway::Iyzico);
+        self::registerJson(Gateway::Moka);
+        self::registerJson(Gateway::Sipay);
+        self::registerJson(Gateway::Param);
+        self::registerJson(Gateway::Craftgate);
+        self::registerJson(Gateway::EsnekPos);
+        self::registerJson(Gateway::Lidio);
+
+        // ─── Special serializers ─────────────────────────────
+        self::registerWithSerializer(Gateway::PayTR, new FormSerializer('PayTR'));
+        self::registerWithSerializer(Gateway::Tosla, new JsonSerializer('Tosla', 'application/json-patch+json'));
+        self::registerWithSerializer(Gateway::Paratika, new FormSerializer('Paratika'));
+    }
+
+    private static function registerXml(Gateway $gateway, string $rootElement): void
+    {
+        $ns = self::gatewayNamespace($gateway);
+
+        self::register(
+            gateway: $gateway,
+            gatewayClass: $ns . 'Gateway',
+            hashGeneratorClass: $ns . 'HashGenerator',
+            responseParserClass: $ns . 'ResponseParser',
+            serializer: new XmlSerializer($rootElement, $gateway->label()),
+        );
+    }
+
+    private static function registerJson(Gateway $gateway): void
+    {
+        $ns = self::gatewayNamespace($gateway);
+
+        self::register(
+            gateway: $gateway,
+            gatewayClass: $ns . 'Gateway',
+            hashGeneratorClass: $ns . 'HashGenerator',
+            responseParserClass: $ns . 'ResponseParser',
+            serializer: new JsonSerializer($gateway->label()),
+        );
+    }
+
+    private static function registerWithSerializer(Gateway $gateway, SerializerInterface $serializer): void
+    {
+        $ns = self::gatewayNamespace($gateway);
+
+        self::register(
+            gateway: $gateway,
+            gatewayClass: $ns . 'Gateway',
+            hashGeneratorClass: $ns . 'HashGenerator',
+            responseParserClass: $ns . 'ResponseParser',
+            serializer: $serializer,
+        );
+    }
+
+    /**
+     * Derive the namespace for a gateway's classes from its enum case.
+     * Gateway::NestPay → TruePos\Gateways\NestPay\NestPay
+     */
+    private static function gatewayNamespace(Gateway $gateway): string
+    {
+        $className = match ($gateway) {
+            Gateway::NestPay => 'NestPay',
+            Gateway::Garanti => 'Garanti',
+            Gateway::PosNet => 'PosNet',
+            Gateway::PayFor => 'PayFor',
+            Gateway::Vakifbank => 'Vakifbank',
+            Gateway::KuveytTurk => 'KuveytTurk',
+            Gateway::PayTR => 'PayTR',
+            Gateway::Iyzico => 'Iyzico',
+            Gateway::Moka => 'Moka',
+            Gateway::Sipay => 'Sipay',
+            Gateway::Param => 'Param',
+            Gateway::Tosla => 'Tosla',
+            Gateway::Craftgate => 'Craftgate',
+            Gateway::EsnekPos => 'EsnekPos',
+            Gateway::Paratika => 'Paratika',
+            Gateway::Lidio => 'Lidio',
         };
+
+        return "TruePos\\Gateways\\{$className}\\{$className}";
     }
 }

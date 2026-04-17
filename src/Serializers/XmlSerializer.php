@@ -2,20 +2,21 @@
 
 declare(strict_types=1);
 
-namespace TruePos\Gateways\PosNet;
+namespace TruePos\Serializers;
 
 use TruePos\Contracts\SerializerInterface;
 use TruePos\Exceptions\GatewayException;
 
-/**
- * PosNet uses a unique XML structure with a root <posnetRequest> element.
- * Unlike NestPay/Garanti, PosNet expects specific nested element ordering.
- */
-final class PosNetSerializer implements SerializerInterface
+final class XmlSerializer implements SerializerInterface
 {
+    public function __construct(
+        private readonly string $rootElement = 'Request',
+        private readonly string $gatewayName = 'Unknown',
+    ) {}
+
     public function serialize(array $data): string
     {
-        $xml = new \SimpleXMLElement('<posnetRequest/>');
+        $xml = new \SimpleXMLElement("<{$this->rootElement}/>");
 
         $this->arrayToXml($data, $xml);
 
@@ -26,10 +27,10 @@ final class PosNetSerializer implements SerializerInterface
     {
         libxml_use_internal_errors(true);
 
-        $xml = simplexml_load_string($payload);
+        $xml = simplexml_load_string($payload, 'SimpleXMLElement', LIBXML_NONET);
 
         if ($xml === false) {
-            throw GatewayException::unexpectedResponse('PosNet', $payload);
+            throw GatewayException::unexpectedResponse($this->gatewayName, $payload);
         }
 
         return $this->xmlToArray($xml);

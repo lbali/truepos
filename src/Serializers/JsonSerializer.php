@@ -2,13 +2,18 @@
 
 declare(strict_types=1);
 
-namespace TruePos\Gateways\Craftgate;
+namespace TruePos\Serializers;
 
 use TruePos\Contracts\SerializerInterface;
 use TruePos\Exceptions\GatewayException;
 
-final class CraftgateSerializer implements SerializerInterface
+final class JsonSerializer implements SerializerInterface
 {
+    public function __construct(
+        private readonly string $gatewayName = 'Unknown',
+        private readonly string $contentType = 'application/json',
+    ) {}
+
     public function serialize(array $data): string
     {
         return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -19,7 +24,7 @@ final class CraftgateSerializer implements SerializerInterface
         $decoded = json_decode($payload, true);
 
         if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
-            throw GatewayException::unexpectedResponse('Craftgate', $payload);
+            throw GatewayException::unexpectedResponse($this->gatewayName, $payload);
         }
 
         return $decoded;
@@ -27,6 +32,6 @@ final class CraftgateSerializer implements SerializerInterface
 
     public function contentType(): string
     {
-        return 'application/json';
+        return $this->contentType;
     }
 }

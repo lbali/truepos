@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TruePos\Gateways;
 
 use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Log\LoggerInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use TruePos\Contracts\GatewayInterface;
 use TruePos\Contracts\HashGeneratorInterface;
 use TruePos\Contracts\ResponseParserInterface;
@@ -21,7 +21,6 @@ use TruePos\DataTransferObjects\ThreeDSecureData;
 use TruePos\Enums\TransactionType;
 use TruePos\Exceptions\GatewayException;
 use TruePos\Exceptions\HashMismatchException;
-use TruePos\Exceptions\ThreeDSecureException;
 use TruePos\ValueObjects\Money;
 
 abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterface
@@ -32,6 +31,8 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
         protected readonly HashGeneratorInterface $hashGenerator,
         protected readonly ResponseParserInterface $responseParser,
         protected readonly ClientInterface $httpClient,
+        protected readonly ?RequestFactoryInterface $requestFactory = null,
+        protected readonly ?StreamFactoryInterface $streamFactory = null,
     ) {}
 
     // ─── Template Method: Purchase ───────────────────────────
@@ -169,7 +170,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
             $parameters = $this->applyHash($parameters, $hash);
             $payload = $this->serializer->serialize($parameters);
 
-            $rawResponse = $this->sendRequest($payload);
+            $rawResponse = $this->sendRequest($payload, $this->endpointFor($type));
             $parsed = $this->serializer->deserialize($rawResponse);
 
             return $this->responseParser->parse($parsed, $type);
@@ -180,18 +181,36 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
         }
     }
 
-    private function sendRequest(string $payload): string
+    private function sendRequest(string $payload, string $url): string
     {
-        $request = new \GuzzleHttp\Psr7\Request(
-            'POST',
-            $this->endpoint(),
-            ['Content-Type' => $this->serializer->contentType()],
-            $payload,
-        );
+        if ($this->requestFactory !== null && $this->streamFactory !== null) {
+            $request = $this->requestFactory->createRequest('POST', $url)
+                ->withHeader('Content-Type', $this->serializer->contentType())
+                ->withBody($this->streamFactory->createStream($payload));
+        } else {
+            $request = new \GuzzleHttp\Psr7\Request(
+                'POST',
+                $url,
+                ['Content-Type' => $this->serializer->contentType()],
+                $payload,
+            );
+        }
 
         $response = $this->httpClient->sendRequest($request);
 
         return (string) $response->getBody();
+    }
+
+    // ─── Endpoint resolution ─────────────────────────────────
+
+    /**
+     * Override in gateways with different URLs per transaction type
+     * (e.g., REST APIs: Lidio /api/Refund, /api/Cancel, etc.).
+     * Default: returns endpoint() for all types.
+     */
+    protected function endpointFor(TransactionType $type): string
+    {
+        return $this->endpoint();
     }
 
     // ─── Abstract hooks — each gateway must implement ────────

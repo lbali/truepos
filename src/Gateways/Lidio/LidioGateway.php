@@ -11,6 +11,7 @@ use TruePos\DataTransferObjects\StatusRequest;
 use TruePos\Enums\Currency;
 use TruePos\Enums\Gateway;
 use TruePos\Enums\PaymentModel;
+use TruePos\Enums\TransactionType;
 use TruePos\Gateways\AbstractGateway;
 use TruePos\ValueObjects\Money;
 
@@ -220,12 +221,28 @@ final class LidioGateway extends AbstractGateway
 
     protected function endpoint(): string
     {
-        return rtrim($this->config['base_url'], '/') . '/api/ProcessPayment';
+        return $this->baseUrl() . '/ProcessPayment';
+    }
+
+    protected function endpointFor(TransactionType $type): string
+    {
+        return match ($type) {
+            TransactionType::Purchase, TransactionType::PreAuth => $this->baseUrl() . '/ProcessPayment',
+            TransactionType::PostAuth => $this->baseUrl() . '/PostAuth',
+            TransactionType::Refund => $this->baseUrl() . '/Refund',
+            TransactionType::Cancel => $this->baseUrl() . '/Cancel',
+            TransactionType::StatusQuery => $this->baseUrl() . '/PaymentInquiry',
+        };
     }
 
     protected function threeDGatewayUrl(): string
     {
-        return rtrim($this->config['base_url'], '/') . '/api/ProcessPayment';
+        return $this->baseUrl() . '/ProcessPayment';
+    }
+
+    private function baseUrl(): string
+    {
+        return rtrim($this->config['base_url'], '/') . '/api';
     }
 
     protected function extractMdStatus(array $callbackData): ?string

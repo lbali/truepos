@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
-namespace TruePos\Gateways\Sipay;
+namespace TruePos\Serializers;
 
 use TruePos\Contracts\SerializerInterface;
 use TruePos\Exceptions\GatewayException;
 
-final class SipaySerializer implements SerializerInterface
+final class FormSerializer implements SerializerInterface
 {
+    public function __construct(
+        private readonly string $gatewayName = 'Unknown',
+    ) {}
+
     public function serialize(array $data): string
     {
-        return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        return http_build_query($data);
     }
 
     public function deserialize(string $payload): array
@@ -19,7 +23,10 @@ final class SipaySerializer implements SerializerInterface
         $decoded = json_decode($payload, true);
 
         if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
-            throw GatewayException::unexpectedResponse('Sipay', $payload);
+            parse_str($payload, $decoded);
+            if (empty($decoded)) {
+                throw GatewayException::unexpectedResponse($this->gatewayName, $payload);
+            }
         }
 
         return $decoded;
@@ -27,6 +34,6 @@ final class SipaySerializer implements SerializerInterface
 
     public function contentType(): string
     {
-        return 'application/json';
+        return 'application/x-www-form-urlencoded';
     }
 }
