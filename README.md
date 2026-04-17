@@ -109,7 +109,7 @@ $request = PaymentRequestBuilder::create()
         expiryMonth: '12',
         expiryYear: '30',
         cvv: '000',
-        holderName: 'Ali Yılmaz',
+        holderName: 'Levent Bali',
     ))
     ->amount(250.50)
     ->installment(3)
