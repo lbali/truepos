@@ -1,5 +1,9 @@
 # TruePos
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/lbali/truepos.svg?style=flat-square)](https://packagist.org/packages/lbali/truepos)
+[![License](https://img.shields.io/github/license/lbali/truepos?style=flat-square)](LICENSE)
+[![PHP Version](https://img.shields.io/packagist/php-v/lbali/truepos?style=flat-square)](composer.json)
+
 Tüm Türk sanal POS sağlayıcılarını tek bir unified API altında birleştiren Laravel paketi.
 
 Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirmek — kodunuz aynı kalır.
@@ -68,7 +72,7 @@ Bir gateway'den diğerine geçmek için tek yapmanız gereken config değiştirm
 ## Kurulum
 
 ```bash
-composer require truepos/truepos
+composer require lbali/truepos
 ```
 
 Config dosyasını yayınlayın:

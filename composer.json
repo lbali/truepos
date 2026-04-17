@@ -1,15 +1,21 @@
 {
-    "name": "truepos/truepos",
+    "name": "lbali/truepos",
     "description": "Unified Turkish virtual POS gateway package for Laravel — all banks, one API.",
-    "keywords": ["laravel", "payment", "pos", "turkey", "sanal-pos", "nestpay", "garanti", "yapikredi", "3d-secure", "ödeme"],
+    "keywords": ["laravel", "payment", "pos", "turkey", "sanal-pos", "nestpay", "garanti", "yapikredi", "3d-secure", "ödeme", "iyzico", "moka", "sipay", "tosla", "craftgate"],
     "license": "MIT",
     "type": "library",
+    "homepage": "https://github.com/lbali/truepos",
     "authors": [
         {
             "name": "Levent Bali",
-            "email": "leventbali@gmail.com"
+            "email": "leventbali@gmail.com",
+            "homepage": "https://github.com/lbali"
         }
     ],
+    "support": {
+        "issues": "https://github.com/lbali/truepos/issues",
+        "source": "https://github.com/lbali/truepos"
+    },
     "require": {
         "php": "^8.2",
         "ext-simplexml": "*",
