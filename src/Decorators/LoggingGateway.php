@@ -92,10 +92,10 @@ final class LoggingGateway implements GatewayInterface, ThreeDSecureInterface
         throw new \BadMethodCallException('Inner gateway does not support 3D Secure.');
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         if ($this->inner instanceof ThreeDSecureInterface) {
-            return $this->inner->verifyThreeDCallback($callbackData);
+            return $this->inner->validateThreeDCallbackPayload($callbackData);
         }
 
         throw new \BadMethodCallException('Inner gateway does not support 3D Secure.');

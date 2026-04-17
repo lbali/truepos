@@ -260,7 +260,7 @@ final class LidioGateway extends AbstractGateway
         return true;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['Hash'] ?? $callbackData['hash'] ?? '';
 

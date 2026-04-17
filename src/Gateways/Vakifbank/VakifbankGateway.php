@@ -177,7 +177,7 @@ final class VakifbankGateway extends AbstractGateway
         return true;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['HashData'] ?? '';
         if (empty($hash)) {

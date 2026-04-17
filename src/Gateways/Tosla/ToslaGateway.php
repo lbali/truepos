@@ -196,7 +196,7 @@ final class ToslaGateway extends AbstractGateway
         return ($this->config['payment_model'] ?? '3d_pay') === '3d';
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['hash'] ?? $callbackData['Hash'] ?? '';
 

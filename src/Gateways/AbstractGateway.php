@@ -159,7 +159,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
     /** @param  array<string, mixed>  $callbackData */
     final public function completeThreeD(array $callbackData): PaymentResponse
     {
-        if (! $this->verifyThreeDCallback($callbackData)) {
+        if (! $this->validateThreeDCallbackPayload($callbackData)) {
             throw HashMismatchException::forCallback($this->gateway()->value);
         }
 

@@ -194,7 +194,7 @@ final class NestPayGateway extends AbstractGateway
 
     // ─── Private helpers ─────────────────────────────────────
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hashParams = $callbackData['HASHPARAMS'] ?? '';
         $hashParamsVal = $callbackData['HASHPARAMSVAL'] ?? '';

@@ -157,7 +157,7 @@ final class EsnekPosGateway extends AbstractGateway
         return false;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['HASH'] ?? $callbackData['AUTH_HASH'] ?? '';
 

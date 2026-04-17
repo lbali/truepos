@@ -225,7 +225,7 @@ final class PosNetGateway extends AbstractGateway
      *
      * @param  array<string, mixed>  $callbackData
      */
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $merchantPacket = $callbackData['MerchantPacket'] ?? '';
         $bankPacket = $callbackData['BankPacket'] ?? '';

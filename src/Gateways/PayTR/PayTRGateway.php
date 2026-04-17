@@ -172,7 +172,7 @@ final class PayTRGateway extends AbstractGateway
         return false;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['hash'] ?? '';
         if (empty($hash)) {

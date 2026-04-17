@@ -25,10 +25,17 @@ interface ThreeDSecureInterface
     public function completeThreeD(array $callbackData): PaymentResponse;
 
     /**
-     * Verify the hash/signature in the 3DS callback data.
-     */
-    /**
+     * Validate the 3DS callback payload.
+     *
+     * For gateways with callback hash/signature (NestPay, Garanti, etc.):
+     * performs cryptographic verification of the callback data.
+     *
+     * For gateways without callback signatures (PosNet, Iyzico):
+     * performs payload sanity check (required fields present, token format).
+     * Actual payment verification happens server-to-server during
+     * completeThreeD() → provision API call.
+     *
      * @param  array<string, mixed>  $callbackData
      */
-    public function verifyThreeDCallback(array $callbackData): bool;
+    public function validateThreeDCallbackPayload(array $callbackData): bool;
 }

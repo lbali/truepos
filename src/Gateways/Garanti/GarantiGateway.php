@@ -235,7 +235,7 @@ final class GarantiGateway extends AbstractGateway
         return true;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['secure3dhash'] ?? '';
         if (empty($hash)) {

@@ -185,7 +185,7 @@ final class MokaGateway extends AbstractGateway
         return false;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['hashValue'] ?? '';
 

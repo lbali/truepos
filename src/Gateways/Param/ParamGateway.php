@@ -180,7 +180,7 @@ final class ParamGateway extends AbstractGateway
         return true;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $hash = $callbackData['Islem_Hash'] ?? '';
         if (empty($hash)) {

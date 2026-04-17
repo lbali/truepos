@@ -216,7 +216,7 @@ final class IyzicoGateway extends AbstractGateway
      *
      * @param  array<string, mixed>  $callbackData
      */
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $token = $callbackData['token'] ?? '';
 

@@ -196,7 +196,7 @@ final class ParatikaGateway extends AbstractGateway
         return true;
     }
 
-    public function verifyThreeDCallback(array $callbackData): bool
+    public function validateThreeDCallbackPayload(array $callbackData): bool
     {
         $responseCode = $callbackData['responseCode'] ?? '';
 
