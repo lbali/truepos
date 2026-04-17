@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="ISO-8859-9"?>
+<posnetResponse>
+  <approved>1</approved>
+  <respCode></respCode>
+  <respText></respText>
+  <hostlogkey>021590067890</hostlogkey>
+  <authCode>304919</authCode>
+  <orderID>00000000TP20260101XYZ</orderID>
+  <instInfo>
+    <inst1>00</inst1>
+    <amnt1>10050</amnt1>
+  </instInfo>
+</posnetResponse>

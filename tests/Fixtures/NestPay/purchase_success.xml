@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="ISO-8859-9"?>
+<CC5Response>
+  <OrderId>TP20260101ABC123</OrderId>
+  <GroupId>TP20260101ABC123</GroupId>
+  <Response>Approved</Response>
+  <AuthCode>P90325</AuthCode>
+  <HostRefNum>025015067890</HostRefNum>
+  <ProcReturnCode>00</ProcReturnCode>
+  <TransId>26041IhKH15201</TransId>
+  <ErrMsg></ErrMsg>
+  <Extra>
+    <SETTLEID>2456</SETTLEID>
+    <TRXDATE>20260101 15:20:01</TRXDATE>
+    <ERRORCODE></ERRORCODE>
+    <CARDBRAND>VISA</CARDBRAND>
+    <CARDISSUER>İŞ BANKASI</CARDISSUER>
+  </Extra>
+</CC5Response>

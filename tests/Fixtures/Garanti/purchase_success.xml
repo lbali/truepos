@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GVPSResponse>
+  <Mode>TEST</Mode>
+  <Order>
+    <OrderID>TP20260101GHI789</OrderID>
+    <GroupID></GroupID>
+  </Order>
+  <Transaction>
+    <Response>
+      <Source>HOST</Source>
+      <Code>00</Code>
+      <ReasonCode>00</ReasonCode>
+      <Message>Approved</Message>
+      <ErrorCode></ErrorCode>
+      <ErrorMsg></ErrorMsg>
+      <SysErrMsg></SysErrMsg>
+    </Response>
+    <RetrefNum>025015067891</RetrefNum>
+    <AuthCode>304919</AuthCode>
+    <BatchNum>003456</BatchNum>
+    <SequenceNum>000001</SequenceNum>
+    <ProvDate>20260101 15:20:01</ProvDate>
+    <CardNumberMasked>454671******7894</CardNumberMasked>
+    <CardHolderName>TEST KART</CardHolderName>
+  </Transaction>
+</GVPSResponse>

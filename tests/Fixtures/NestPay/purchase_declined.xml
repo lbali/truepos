@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="ISO-8859-9"?>
+<CC5Response>
+  <OrderId>TP20260101DEF456</OrderId>
+  <GroupId>TP20260101DEF456</GroupId>
+  <Response>Declined</Response>
+  <AuthCode></AuthCode>
+  <HostRefNum></HostRefNum>
+  <ProcReturnCode>05</ProcReturnCode>
+  <TransId>26041IhKH15202</TransId>
+  <ErrMsg>Genel red</ErrMsg>
+  <ErrCode>05</ErrCode>
+  <Extra>
+    <ERRORCODE>05</ERRORCODE>
+  </Extra>
+</CC5Response>

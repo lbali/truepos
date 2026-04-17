@@ -1,0 +1,232 @@
+<?php
+
+declare(strict_types=1);
+
+namespace TruePos\Gateways;
+
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Log\LoggerInterface;
+use TruePos\Contracts\GatewayInterface;
+use TruePos\Contracts\HashGeneratorInterface;
+use TruePos\Contracts\ResponseParserInterface;
+use TruePos\Contracts\SerializerInterface;
+use TruePos\Contracts\ThreeDSecureInterface;
+use TruePos\DataTransferObjects\CancelRequest;
+use TruePos\DataTransferObjects\PaymentRequest;
+use TruePos\DataTransferObjects\PaymentResponse;
+use TruePos\DataTransferObjects\RefundRequest;
+use TruePos\DataTransferObjects\StatusRequest;
+use TruePos\DataTransferObjects\ThreeDSecureData;
+use TruePos\Enums\TransactionType;
+use TruePos\Exceptions\GatewayException;
+use TruePos\Exceptions\HashMismatchException;
+use TruePos\Exceptions\ThreeDSecureException;
+use TruePos\ValueObjects\Money;
+
+abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterface
+{
+    public function __construct(
+        protected readonly array $config,
+        protected readonly SerializerInterface $serializer,
+        protected readonly HashGeneratorInterface $hashGenerator,
+        protected readonly ResponseParserInterface $responseParser,
+        protected readonly ClientInterface $httpClient,
+    ) {}
+
+    // ─── Template Method: Purchase ───────────────────────────
+
+    final public function purchase(PaymentRequest $request): PaymentResponse
+    {
+        if ($request->isThreeD()) {
+            $threeDData = $this->initializeThreeD($request);
+
+            return PaymentResponse::threeDRedirect(
+                data: $threeDData,
+                gateway: $this->gateway(),
+                orderId: $request->orderId,
+            );
+        }
+
+        return $this->executeTransaction(
+            parameters: $this->buildPurchaseParameters($request),
+            type: TransactionType::Purchase,
+        );
+    }
+
+    // ─── Template Method: Pre-Authorization ──────────────────
+
+    final public function preAuthorize(PaymentRequest $request): PaymentResponse
+    {
+        if ($request->isThreeD()) {
+            $threeDData = $this->initializeThreeD($request);
+
+            return PaymentResponse::threeDRedirect(
+                data: $threeDData,
+                gateway: $this->gateway(),
+                orderId: $request->orderId,
+            );
+        }
+
+        return $this->executeTransaction(
+            parameters: $this->buildPreAuthParameters($request),
+            type: TransactionType::PreAuth,
+        );
+    }
+
+    // ─── Template Method: Post-Authorization (Capture) ───────
+
+    final public function postAuthorize(string $transactionId, Money $amount): PaymentResponse
+    {
+        return $this->executeTransaction(
+            parameters: $this->buildPostAuthParameters($transactionId, $amount),
+            type: TransactionType::PostAuth,
+        );
+    }
+
+    // ─── Template Method: Refund ─────────────────────────────
+
+    final public function refund(RefundRequest $request): PaymentResponse
+    {
+        return $this->executeTransaction(
+            parameters: $this->buildRefundParameters($request),
+            type: TransactionType::Refund,
+        );
+    }
+
+    // ─── Template Method: Cancel ─────────────────────────────
+
+    final public function cancel(CancelRequest $request): PaymentResponse
+    {
+        return $this->executeTransaction(
+            parameters: $this->buildCancelParameters($request),
+            type: TransactionType::Cancel,
+        );
+    }
+
+    // ─── Template Method: Status Query ───────────────────────
+
+    final public function status(StatusRequest $request): PaymentResponse
+    {
+        return $this->executeTransaction(
+            parameters: $this->buildStatusParameters($request),
+            type: TransactionType::StatusQuery,
+        );
+    }
+
+    // ─── 3D Secure: Initialize ───────────────────────────────
+
+    final public function initializeThreeD(PaymentRequest $request): ThreeDSecureData
+    {
+        $params = $this->buildThreeDFormParameters($request);
+        $hash = $this->hashGenerator->generate($params, $this->credentials());
+        $params = $this->applyHash($params, $hash);
+
+        return new ThreeDSecureData(
+            gatewayUrl: $this->threeDGatewayUrl(),
+            formParameters: $params,
+        );
+    }
+
+    // ─── 3D Secure: Complete ─────────────────────────────────
+
+    final public function completeThreeD(array $callbackData): PaymentResponse
+    {
+        if (! $this->verifyThreeDCallback($callbackData)) {
+            throw HashMismatchException::forCallback($this->gateway()->value);
+        }
+
+        $mdStatus = $this->extractMdStatus($callbackData);
+
+        if (! $this->isThreeDAuthSuccessful($mdStatus)) {
+            return PaymentResponse::failed(
+                gateway: $this->gateway(),
+                type: TransactionType::Purchase,
+                errorCode: $mdStatus,
+                errorMessage: '3D Secure authentication failed.',
+                rawResponse: $callbackData,
+            );
+        }
+
+        // 3D model: bank only authenticated, we must now charge via API.
+        // 3D Pay model: bank already charged, just parse the callback.
+        if ($this->requiresProvisionAfterThreeD()) {
+            return $this->executeTransaction(
+                parameters: $this->buildThreeDProvisionParameters($callbackData),
+                type: TransactionType::Purchase,
+            );
+        }
+
+        return $this->responseParser->parseThreeDCallback($callbackData);
+    }
+
+    // ─── Core execution engine ───────────────────────────────
+
+    private function executeTransaction(array $parameters, TransactionType $type): PaymentResponse
+    {
+        try {
+            $hash = $this->hashGenerator->generate($parameters, $this->credentials());
+            $parameters = $this->applyHash($parameters, $hash);
+            $payload = $this->serializer->serialize($parameters);
+
+            $rawResponse = $this->sendRequest($payload);
+            $parsed = $this->serializer->deserialize($rawResponse);
+
+            return $this->responseParser->parse($parsed, $type);
+        } catch (GatewayException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw GatewayException::connectionFailed($this->gateway()->value, $e);
+        }
+    }
+
+    private function sendRequest(string $payload): string
+    {
+        $request = new \GuzzleHttp\Psr7\Request(
+            'POST',
+            $this->endpoint(),
+            ['Content-Type' => $this->serializer->contentType()],
+            $payload,
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        return (string) $response->getBody();
+    }
+
+    // ─── Abstract hooks — each gateway must implement ────────
+
+    abstract protected function buildPurchaseParameters(PaymentRequest $request): array;
+
+    abstract protected function buildPreAuthParameters(PaymentRequest $request): array;
+
+    abstract protected function buildPostAuthParameters(string $transactionId, Money $amount): array;
+
+    abstract protected function buildRefundParameters(RefundRequest $request): array;
+
+    abstract protected function buildCancelParameters(CancelRequest $request): array;
+
+    abstract protected function buildStatusParameters(StatusRequest $request): array;
+
+    abstract protected function buildThreeDFormParameters(PaymentRequest $request): array;
+
+    abstract protected function buildThreeDProvisionParameters(array $callbackData): array;
+
+    abstract protected function applyHash(array $parameters, string $hash): array;
+
+    abstract protected function credentials(): array;
+
+    abstract protected function endpoint(): string;
+
+    abstract protected function threeDGatewayUrl(): string;
+
+    abstract protected function extractMdStatus(array $callbackData): ?string;
+
+    abstract protected function isThreeDAuthSuccessful(?string $mdStatus): bool;
+
+    /**
+     * Whether the gateway requires a second API call after 3DS auth.
+     * True for 3D model (NestPay, Garanti). False for 3D Pay model.
+     */
+    abstract protected function requiresProvisionAfterThreeD(): bool;
+}

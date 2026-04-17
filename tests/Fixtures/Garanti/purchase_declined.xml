@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GVPSResponse>
+  <Mode>TEST</Mode>
+  <Order>
+    <OrderID>TP20260101JKL012</OrderID>
+    <GroupID></GroupID>
+  </Order>
+  <Transaction>
+    <Response>
+      <Source>HOST</Source>
+      <Code>05</Code>
+      <ReasonCode>05</ReasonCode>
+      <Message>Declined</Message>
+      <ErrorCode>05</ErrorCode>
+      <ErrorMsg>Genel red</ErrorMsg>
+      <SysErrMsg>System error</SysErrMsg>
+    </Response>
+    <RetrefNum></RetrefNum>
+    <AuthCode></AuthCode>
+    <BatchNum></BatchNum>
+    <SequenceNum></SequenceNum>
+  </Transaction>
+</GVPSResponse>
