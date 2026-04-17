@@ -13,6 +13,7 @@ use TruePos\Decorators\RetryGateway;
 use TruePos\Enums\Gateway;
 use TruePos\Exceptions\InvalidConfigurationException;
 use TruePos\Factory\GatewayFactory;
+use TruePos\Gateways\AbstractGateway;
 
 final class TruePosManager
 {
@@ -74,6 +75,13 @@ final class TruePosManager
             config: $gatewayConfig,
             httpClient: $this->httpClient,
         );
+
+        // Auto-register 3DS mapping when a 3D redirect is created
+        if ($gateway instanceof AbstractGateway && $this->cache !== null) {
+            $gateway->setOnThreeDInitialized(
+                fn (string $orderId, string $gatewayName) => $this->registerThreeDMapping($orderId, $name),
+            );
+        }
 
         // Apply decorators from config
         $loggingEnabled = $gatewayConfig['logging']

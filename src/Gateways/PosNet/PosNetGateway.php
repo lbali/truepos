@@ -219,10 +219,13 @@ final class PosNetGateway extends AbstractGateway
         $bankPacket = $callbackData['BankPacket'] ?? '';
         $sign = $callbackData['Sign'] ?? '';
 
-        // PosNet 3DS callback has MerchantPacket + BankPacket + Sign
-        // If all three exist, the callback is considered valid
-        // The actual verification happens during the provision step
-        return ! empty($merchantPacket) && ! empty($bankPacket) && ! empty($sign);
+        // All three fields are required — reject if any is missing
+        if ($merchantPacket === '' || $bankPacket === '' || $sign === '') {
+            return false;
+        }
+
+        // The actual cryptographic verification happens during the provision step
+        return true;
     }
 
     // ─── Private helpers ─────────────────────────────────────

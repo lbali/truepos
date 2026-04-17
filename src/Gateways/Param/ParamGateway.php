@@ -184,7 +184,7 @@ final class ParamGateway extends AbstractGateway
     {
         $hash = $callbackData['Islem_Hash'] ?? '';
         if (empty($hash)) {
-            return ! empty($callbackData['Dekont_ID'] ?? $callbackData['TURKPOS_RETVAL_Dekont_ID'] ?? '');
+            return false;
         }
 
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());

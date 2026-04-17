@@ -37,6 +37,35 @@ final readonly class CreditCard
         $this->network = CardNetwork::fromBin($this->bin());
     }
 
+    /**
+     * Mask sensitive data in var_dump/print_r output.
+     *
+     * @return array<string, mixed>
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'number' => $this->maskedNumber(),
+            'expiryMonth' => $this->expiryMonth,
+            'expiryYear' => $this->expiryYear,
+            'cvv' => '***',
+            'holderName' => $this->holderName,
+            'network' => $this->network,
+        ];
+    }
+
+    /**
+     * Prevent accidental serialization of sensitive card data.
+     *
+     * @return never
+     *
+     * @throws \LogicException
+     */
+    public function __serialize(): array
+    {
+        throw new \LogicException('CreditCard must not be serialized — it contains sensitive cardholder data.');
+    }
+
     public function bin(): string
     {
         return substr($this->number, 0, 6);

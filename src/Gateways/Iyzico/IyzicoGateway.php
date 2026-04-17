@@ -208,7 +208,16 @@ final class IyzicoGateway extends AbstractGateway
     {
         $token = $callbackData['token'] ?? '';
 
-        return ! empty($token);
+        if ($token === '') {
+            return false;
+        }
+
+        // Verify token has valid format (iyzico tokens are non-trivial strings)
+        if (strlen($token) < 16) {
+            return false;
+        }
+
+        return true;
     }
 
     private function currencyCode(Money $money): string

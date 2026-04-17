@@ -25,6 +25,9 @@ use TruePos\ValueObjects\Money;
 
 abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterface
 {
+    /** @var (\Closure(string, string): void)|null */
+    private ?\Closure $onThreeDInitialized = null;
+
     public function __construct(
         protected readonly array $config,
         protected readonly SerializerInterface $serializer,
@@ -35,12 +38,27 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
         protected readonly ?StreamFactoryInterface $streamFactory = null,
     ) {}
 
+    /**
+     * Set a callback invoked when a 3DS redirect is created.
+     * Receives (orderId, gatewayName) so the mapping can be stored.
+     *
+     * @param  (\Closure(string, string): void)|null  $callback
+     */
+    public function setOnThreeDInitialized(?\Closure $callback): void
+    {
+        $this->onThreeDInitialized = $callback;
+    }
+
     // ─── Template Method: Purchase ───────────────────────────
 
     final public function purchase(PaymentRequest $request): PaymentResponse
     {
         if ($request->isThreeD()) {
             $threeDData = $this->initializeThreeD($request);
+
+            if ($this->onThreeDInitialized !== null) {
+                ($this->onThreeDInitialized)($request->orderId, $this->gateway()->value);
+            }
 
             return PaymentResponse::threeDRedirect(
                 data: $threeDData,
@@ -61,6 +79,10 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
     {
         if ($request->isThreeD()) {
             $threeDData = $this->initializeThreeD($request);
+
+            if ($this->onThreeDInitialized !== null) {
+                ($this->onThreeDInitialized)($request->orderId, $this->gateway()->value);
+            }
 
             return PaymentResponse::threeDRedirect(
                 data: $threeDData,

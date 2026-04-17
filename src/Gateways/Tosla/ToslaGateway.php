@@ -201,8 +201,7 @@ final class ToslaGateway extends AbstractGateway
         $hash = $callbackData['hash'] ?? $callbackData['Hash'] ?? '';
 
         if (empty($hash)) {
-            // Tosla callback may not always include hash — verify via Code
-            return isset($callbackData['Code']) || isset($callbackData['OrderId']);
+            return false;
         }
 
         return $this->hashGenerator->verify($hash, $callbackData, $this->credentials());

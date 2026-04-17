@@ -30,12 +30,14 @@ final class RetryGateway implements GatewayInterface
 
     public function purchase(PaymentRequest $request): PaymentResponse
     {
-        return $this->retry(fn () => $this->inner->purchase($request));
+        // Non-idempotent — do not retry to avoid duplicate charges
+        return $this->inner->purchase($request);
     }
 
     public function preAuthorize(PaymentRequest $request): PaymentResponse
     {
-        return $this->retry(fn () => $this->inner->preAuthorize($request));
+        // Non-idempotent — do not retry to avoid duplicate holds
+        return $this->inner->preAuthorize($request);
     }
 
     public function postAuthorize(string $transactionId, Money $amount): PaymentResponse
@@ -45,7 +47,8 @@ final class RetryGateway implements GatewayInterface
 
     public function refund(RefundRequest $request): PaymentResponse
     {
-        return $this->retry(fn () => $this->inner->refund($request));
+        // Non-idempotent — do not retry to avoid duplicate refunds
+        return $this->inner->refund($request);
     }
 
     public function cancel(CancelRequest $request): PaymentResponse
