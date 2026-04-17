@@ -10,4 +10,5 @@ Route::post(
     [ThreeDSecureController::class, 'callback']
 )
     ->name('truepos.threed.callback')
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->middleware(\TruePos\Http\Middleware\VerifyThreeDSecureCallback::class);

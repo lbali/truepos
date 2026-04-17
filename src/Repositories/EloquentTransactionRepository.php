@@ -7,6 +7,7 @@ namespace TruePos\Repositories;
 use TruePos\Contracts\TransactionRepositoryInterface;
 use TruePos\DataTransferObjects\PaymentResponse;
 use TruePos\Models\Transaction;
+use TruePos\Support\SensitiveDataRedactor;
 
 final class EloquentTransactionRepository implements TransactionRepositoryInterface
 {
@@ -27,7 +28,7 @@ final class EloquentTransactionRepository implements TransactionRepositoryInterf
             'error_message' => $response->errorMessage,
             'host_reference_number' => $response->hostReferenceNumber,
             'md_status' => $response->mdStatus,
-            'raw_response' => $response->rawResponse,
+            'raw_response' => SensitiveDataRedactor::redact($response->rawResponse),
         ]);
     }
 

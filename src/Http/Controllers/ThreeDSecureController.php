@@ -11,6 +11,7 @@ use TruePos\Events\PaymentCompleted;
 use TruePos\Events\PaymentFailed;
 use TruePos\Events\ThreeDSecureCallbackReceived;
 use TruePos\Exceptions\ThreeDSecureException;
+use TruePos\Support\SensitiveDataRedactor;
 use TruePos\TruePosManager;
 
 final class ThreeDSecureController extends Controller
@@ -19,7 +20,7 @@ final class ThreeDSecureController extends Controller
     {
         $callbackData = $request->all();
 
-        event(new ThreeDSecureCallbackReceived($callbackData));
+        event(new ThreeDSecureCallbackReceived(SensitiveDataRedactor::redact($callbackData)));
 
         $gatewayName = $this->resolveGateway($callbackData, $manager);
         $gateway = $manager->gateway($gatewayName);

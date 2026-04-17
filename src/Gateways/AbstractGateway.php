@@ -190,9 +190,15 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
         try {
             $hash = $this->hashGenerator->generate($parameters, $this->credentials());
             $parameters = $this->applyHash($parameters, $hash);
+
+            $headers = $this->buildHttpHeaders($parameters);
+
+            // Remove internal underscore-prefixed keys before serialization
+            $parameters = array_filter($parameters, static fn (string $key): bool => !str_starts_with($key, '_'), ARRAY_FILTER_USE_KEY);
+
             $payload = $this->serializer->serialize($parameters);
 
-            $rawResponse = $this->sendRequest($payload, $this->endpointFor($type));
+            $rawResponse = $this->sendRequest($payload, $this->endpointFor($type), $headers);
             $parsed = $this->serializer->deserialize($rawResponse);
 
             return $this->responseParser->parse($parsed, $type);
@@ -203,17 +209,33 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
         }
     }
 
-    private function sendRequest(string $payload, string $url): string
+    /**
+     * Build additional HTTP headers for the request.
+     * Override in gateways that require custom headers (e.g. Craftgate signature headers).
+     *
+     * @param  array<string, mixed>  $parameters  The full parameter set (including _ prefixed internal keys)
+     * @return array<string, string>
+     */
+    protected function buildHttpHeaders(array $parameters): array
     {
+        return [];
+    }
+
+    private function sendRequest(string $payload, string $url, array $headers = []): string
+    {
+        $allHeaders = array_merge(['Content-Type' => $this->serializer->contentType()], $headers);
+
         if ($this->requestFactory !== null && $this->streamFactory !== null) {
-            $request = $this->requestFactory->createRequest('POST', $url)
-                ->withHeader('Content-Type', $this->serializer->contentType())
-                ->withBody($this->streamFactory->createStream($payload));
+            $request = $this->requestFactory->createRequest('POST', $url);
+            foreach ($allHeaders as $name => $value) {
+                $request = $request->withHeader($name, $value);
+            }
+            $request = $request->withBody($this->streamFactory->createStream($payload));
         } else {
             $request = new \GuzzleHttp\Psr7\Request(
                 'POST',
                 $url,
-                ['Content-Type' => $this->serializer->contentType()],
+                $allHeaders,
                 $payload,
             );
         }

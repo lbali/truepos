@@ -137,10 +137,23 @@ final class CraftgateGateway extends AbstractGateway
     protected function applyHash(array $parameters, string $hash): array
     {
         // Craftgate hash goes in HTTP headers, not in body.
-        // We store it in a special key that sendRequest will extract.
+        // Store in underscore-prefixed keys; buildHttpHeaders() extracts them.
         $parameters['_signature'] = $hash;
+        $parameters['_rnd'] = $parameters['_rnd'] ?? bin2hex(random_bytes(8));
 
         return $parameters;
+    }
+
+    protected function buildHttpHeaders(array $parameters): array
+    {
+        $credentials = $this->credentials();
+
+        return [
+            'x-api-key' => $credentials['apiKey'],
+            'x-rnd-key' => $parameters['_rnd'] ?? '',
+            'x-auth-version' => 'v1',
+            'x-signature' => $parameters['_signature'] ?? '',
+        ];
     }
 
     protected function credentials(): array

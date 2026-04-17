@@ -34,9 +34,15 @@ final class TruePosServiceProvider extends ServiceProvider
         // Register PSR-18 HTTP client if not already bound
         if (! $this->app->bound(ClientInterface::class)) {
             $this->app->bind(ClientInterface::class, function () {
+                $verifySsl = config('truepos.verify_ssl', true);
+
+                if (! $verifySsl && app()->environment('production')) {
+                    throw new \RuntimeException('TruePos: verify_ssl cannot be disabled in production.');
+                }
+
                 return new Client([
                     'timeout' => config('truepos.http_timeout', 30),
-                    'verify' => config('truepos.verify_ssl', true),
+                    'verify' => $verifySsl,
                 ]);
             });
         }
