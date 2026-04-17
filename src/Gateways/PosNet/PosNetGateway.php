@@ -213,18 +213,28 @@ final class PosNetGateway extends AbstractGateway
         return true;
     }
 
+    /**
+     * Callback payload sanity check (NOT cryptographic verification).
+     *
+     * PosNet's 3DS callback contains encrypted MerchantPacket, BankPacket, and Sign
+     * fields that can only be decrypted/verified by the PosNet API itself during the
+     * provision step (oosTranData). This method validates that all required fields
+     * are present. The actual cryptographic verification happens server-to-server
+     * when completeThreeD() calls buildThreeDProvisionParameters() → executeTransaction(),
+     * because requiresProvisionAfterThreeD() returns true.
+     *
+     * @param  array<string, mixed>  $callbackData
+     */
     public function verifyThreeDCallback(array $callbackData): bool
     {
         $merchantPacket = $callbackData['MerchantPacket'] ?? '';
         $bankPacket = $callbackData['BankPacket'] ?? '';
         $sign = $callbackData['Sign'] ?? '';
 
-        // All three fields are required — reject if any is missing
         if ($merchantPacket === '' || $bankPacket === '' || $sign === '') {
             return false;
         }
 
-        // The actual cryptographic verification happens during the provision step
         return true;
     }
 

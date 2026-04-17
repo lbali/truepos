@@ -204,16 +204,23 @@ final class IyzicoGateway extends AbstractGateway
         return true;
     }
 
+    /**
+     * Callback payload sanity check (NOT cryptographic verification).
+     *
+     * iyzico's 3DS callback returns a token that can only be verified by calling
+     * iyzico's API server-to-server. This method validates that the token is present
+     * and has a plausible format (min 16 chars). The actual payment verification
+     * happens when completeThreeD() calls buildThreeDProvisionParameters() →
+     * executeTransaction(), because requiresProvisionAfterThreeD() returns true.
+     * The iyzico API will reject any forged or invalid token at that step.
+     *
+     * @param  array<string, mixed>  $callbackData
+     */
     public function verifyThreeDCallback(array $callbackData): bool
     {
         $token = $callbackData['token'] ?? '';
 
-        if ($token === '') {
-            return false;
-        }
-
-        // Verify token has valid format (iyzico tokens are non-trivial strings)
-        if (strlen($token) < 16) {
+        if ($token === '' || strlen($token) < 16) {
             return false;
         }
 
