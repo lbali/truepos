@@ -53,7 +53,7 @@ final class IyzicoHashGenerator implements HashGeneratorInterface
     private function buildPkiString(array $data): string
     {
         $filtered = array_filter($data, function ($key) {
-            return ! str_starts_with($key, '_');
+            return ! str_starts_with((string) $key, '_');
         }, ARRAY_FILTER_USE_KEY);
 
         if (empty($filtered)) {

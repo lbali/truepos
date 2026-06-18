@@ -199,7 +199,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
             $headers = $this->buildHttpHeaders($parameters);
 
             // Remove internal underscore-prefixed keys before serialization
-            $parameters = array_filter($parameters, static fn (string $key): bool => !str_starts_with($key, '_'), ARRAY_FILTER_USE_KEY);
+            $parameters = array_filter($parameters, static fn ($key): bool => !str_starts_with((string) $key, '_'), ARRAY_FILTER_USE_KEY);
 
             $payload = $this->serializer->serialize($parameters);
 
