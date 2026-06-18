@@ -31,19 +31,11 @@ final readonly class PaymentResponse
         public ?ThreeDSecureData $threeDSecureData = null,
         public ?string $mdStatus = null,
         public array $rawResponse = [],
-        public \DateTimeImmutable $timestamp = new \DateTimeImmutable(),
+        public \DateTimeImmutable $timestamp = new \DateTimeImmutable,
+        /** Kart saklandıysa (CardStorageInterface) sonraki tahsilat için token bilgileri. */
+        public ?string $cardUserKey = null,
+        public ?string $cardToken = null,
     ) {}
-
-    public function isSuccessful(): bool
-    {
-        return $this->isSuccessful;
-    }
-
-    public function isThreeDRedirect(): bool
-    {
-        return $this->threeDSecureData !== null
-            && $this->status === TransactionStatus::Pending;
-    }
 
     public static function threeDRedirect(
         ThreeDSecureData $data,
@@ -79,5 +71,16 @@ final readonly class PaymentResponse
             errorMessage: $errorMessage,
             rawResponse: $rawResponse,
         );
+    }
+
+    public function isSuccessful(): bool
+    {
+        return $this->isSuccessful;
+    }
+
+    public function isThreeDRedirect(): bool
+    {
+        return $this->threeDSecureData !== null
+            && $this->status === TransactionStatus::Pending;
     }
 }

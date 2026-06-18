@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace TruePos\Gateways\Iyzico;
 
+use TruePos\Contracts\CardStorageInterface;
 use TruePos\DataTransferObjects\CancelRequest;
 use TruePos\DataTransferObjects\PaymentRequest;
+use TruePos\DataTransferObjects\PaymentResponse;
 use TruePos\DataTransferObjects\RefundRequest;
 use TruePos\DataTransferObjects\StatusRequest;
+use TruePos\DataTransferObjects\StoredCardChargeRequest;
 use TruePos\Enums\Currency;
 use TruePos\Enums\Gateway;
 use TruePos\Enums\PaymentModel;
+use TruePos\Enums\TransactionType;
 use TruePos\Gateways\AbstractGateway;
 use TruePos\ValueObjects\Money;
 
@@ -22,7 +26,7 @@ use TruePos\ValueObjects\Money;
  * Requires basket items in every payment request.
  * 3DS uses iyzico's initialize/callback flow.
  */
-final class IyzicoGateway extends AbstractGateway
+final class IyzicoGateway extends AbstractGateway implements CardStorageInterface
 {
     public function gateway(): Gateway
     {
@@ -42,6 +46,41 @@ final class IyzicoGateway extends AbstractGateway
         ];
     }
 
+    /**
+     * Saklı kartla (cardUserKey + cardToken) tek çekim — PAN/CVC yok, non-3DS.
+     * Recurring/abonelik yenilemeleri için (CardStorageInterface).
+     */
+    public function chargeStoredCard(StoredCardChargeRequest $request): PaymentResponse
+    {
+        return $this->executeTransaction(
+            $this->buildStoredCardParameters($request),
+            TransactionType::Purchase,
+        );
+    }
+
+    /**
+     * Callback payload sanity check (NOT cryptographic verification).
+     *
+     * iyzico's 3DS callback returns a token that can only be verified by calling
+     * iyzico's API server-to-server. This method validates that the token is present
+     * and has a plausible format (min 16 chars). The actual payment verification
+     * happens when completeThreeD() calls buildThreeDProvisionParameters() →
+     * executeTransaction(), because requiresProvisionAfterThreeD() returns true.
+     * The iyzico API will reject any forged or invalid token at that step.
+     *
+     * @param  array<string, mixed>  $callbackData
+     */
+    public function validateThreeDCallbackPayload(array $callbackData): bool
+    {
+        $token = $callbackData['token'] ?? '';
+
+        if ($token === '' || strlen($token) < 16) {
+            return false;
+        }
+
+        return true;
+    }
+
     protected function buildPurchaseParameters(PaymentRequest $request): array
     {
         return [
@@ -58,12 +97,12 @@ final class IyzicoGateway extends AbstractGateway
                 'cardHolderName' => $request->card?->holderName ?? '',
                 'cardNumber' => $request->card?->number ?? '',
                 'expireMonth' => $request->card ? str_pad($request->card->expiryMonth, 2, '0', STR_PAD_LEFT) : '',
-                'expireYear' => $request->card ? (strlen($request->card->expiryYear) === 2 ? '20' . $request->card->expiryYear : $request->card->expiryYear) : '',
+                'expireYear' => $request->card ? (strlen($request->card->expiryYear) === 2 ? '20'.$request->card->expiryYear : $request->card->expiryYear) : '',
                 'cvc' => $request->card?->cvv ?? '',
-                'registerCard' => '0',
+                'registerCard' => $request->storeCard ? '1' : '0',
             ],
             'buyer' => [
-                'id' => $request->customer?->identity ?? 'BUYER_' . $request->orderId,
+                'id' => $request->customer?->identity ?? 'BUYER_'.$request->orderId,
                 'name' => $this->extractFirstName($request->customer?->name),
                 'surname' => $this->extractLastName($request->customer?->name),
                 'email' => $request->customer?->email ?? 'noemail@example.com',
@@ -205,26 +244,60 @@ final class IyzicoGateway extends AbstractGateway
     }
 
     /**
-     * Callback payload sanity check (NOT cryptographic verification).
+     * Saklı kart parametreleri — buildPurchaseParameters ile aynı, ancak paymentCard
+     * ham kart yerine cardUserKey + cardToken taşır.
      *
-     * iyzico's 3DS callback returns a token that can only be verified by calling
-     * iyzico's API server-to-server. This method validates that the token is present
-     * and has a plausible format (min 16 chars). The actual payment verification
-     * happens when completeThreeD() calls buildThreeDProvisionParameters() →
-     * executeTransaction(), because requiresProvisionAfterThreeD() returns true.
-     * The iyzico API will reject any forged or invalid token at that step.
-     *
-     * @param  array<string, mixed>  $callbackData
+     * @return array<string, mixed>
      */
-    public function validateThreeDCallbackPayload(array $callbackData): bool
+    private function buildStoredCardParameters(StoredCardChargeRequest $request): array
     {
-        $token = $callbackData['token'] ?? '';
-
-        if ($token === '' || strlen($token) < 16) {
-            return false;
-        }
-
-        return true;
+        return [
+            'locale' => $this->config['locale'] ?? 'tr',
+            'conversationId' => $request->orderId,
+            'price' => $request->amount->toDecimal(),
+            'paidPrice' => $request->amount->toDecimal(),
+            'currency' => $this->currencyCode($request->amount),
+            'installment' => $request->hasInstallment() ? $request->installment : 1,
+            'basketId' => $request->orderId,
+            'paymentChannel' => 'WEB',
+            'paymentGroup' => 'PRODUCT',
+            'paymentCard' => [
+                'cardUserKey' => $request->cardUserKey,
+                'cardToken' => $request->cardToken,
+            ],
+            'buyer' => [
+                'id' => $request->customer?->identity ?? 'BUYER_'.$request->orderId,
+                'name' => $this->extractFirstName($request->customer?->name),
+                'surname' => $this->extractLastName($request->customer?->name),
+                'email' => $request->customer?->email ?? 'noemail@example.com',
+                'ip' => $request->customer?->ip ?? '',
+                'identityNumber' => $request->customer?->identity ?? '11111111111',
+                'registrationAddress' => 'N/A',
+                'city' => 'Istanbul',
+                'country' => 'Turkey',
+            ],
+            'shippingAddress' => [
+                'contactName' => $request->customer?->name ?? 'N/A',
+                'city' => 'Istanbul',
+                'country' => 'Turkey',
+                'address' => 'N/A',
+            ],
+            'billingAddress' => [
+                'contactName' => $request->customer?->name ?? 'N/A',
+                'city' => 'Istanbul',
+                'country' => 'Turkey',
+                'address' => 'N/A',
+            ],
+            'basketItems' => [
+                [
+                    'id' => $request->orderId,
+                    'name' => $request->metadata['itemName'] ?? 'Ödeme',
+                    'category1' => $request->metadata['category'] ?? 'Default',
+                    'itemType' => 'PHYSICAL',
+                    'price' => $request->amount->toDecimal(),
+                ],
+            ],
+        ];
     }
 
     private function currencyCode(Money $money): string

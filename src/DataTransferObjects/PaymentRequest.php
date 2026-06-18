@@ -25,6 +25,8 @@ final readonly class PaymentRequest
         public ?Customer $customer = null,
         public ?string $callbackUrl = null,
         public array $metadata = [],
+        /** true ise (destekleyen gateway'de) kart tokenize edilir; token PaymentResponse'ta döner. */
+        public bool $storeCard = false,
     ) {}
 
     public function isThreeD(): bool

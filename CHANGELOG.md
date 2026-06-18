@@ -2,6 +2,24 @@
 
 Bu projedeki önemli değişiklikler burada belgelenir.
 
+## [0.2.0-beta] - 2026-06-18
+
+### Eklenenler
+- **Kart saklama / card-on-file** yeteneği (`CardStorageInterface`) — `ThreeDSecureInterface` gibi opsiyonel bir capability. İlk implementasyon: iyzico.
+  - `PaymentRequest::$storeCard` (builder `->storeCard()`) ile ödeme sırasında kart tokenize edilir (iyzico `registerCard=1`).
+  - Token'lar `PaymentResponse->cardUserKey` + `->cardToken` olarak döner (`IyzicoResponseParser`).
+  - `chargeStoredCard(StoredCardChargeRequest)` ile saklı kartla PAN/CVC'siz, non-3DS tahsilat (recurring/abonelik için).
+- `StoredCardChargeRequest` DTO.
+
+### Değişenler
+- `AbstractGateway::executeTransaction()` artık `protected` — capability metotları (ör. `chargeStoredCard`) ortak boru hattını kullanabilsin diye.
+
+### Düzeltmeler
+- Sayısal sepet/parametre anahtarlarında `str_starts_with()` int-key `TypeError`'ı (regular ödemede "bağlantı hatası" olarak görünüyordu).
+
+### Test
+- Test paketi 149 test / 480 doğrulama (iyzico kart saklama dahil). PHPStan seviye 8 temiz.
+
 ## [0.1.0-beta] - 2026-04-17
 
 ### Eklenenler

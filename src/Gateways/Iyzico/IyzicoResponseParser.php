@@ -37,6 +37,8 @@ final class IyzicoResponseParser implements ResponseParserInterface
             errorMessage: $isApproved ? null : ($rawResponse['errorMessage'] ?? null),
             hostReferenceNumber: $rawResponse['hostReference'] ?? null,
             rawResponse: $rawResponse,
+            cardUserKey: $rawResponse['cardUserKey'] ?? null,
+            cardToken: $rawResponse['cardToken'] ?? null,
         );
     }
 
@@ -59,6 +61,8 @@ final class IyzicoResponseParser implements ResponseParserInterface
             errorMessage: $isApproved ? null : ($callbackData['errorMessage'] ?? null),
             mdStatus: $callbackData['mdStatus'] ?? null,
             rawResponse: $callbackData,
+            cardUserKey: $callbackData['cardUserKey'] ?? null,
+            cardToken: $callbackData['cardToken'] ?? null,
         );
     }
 }

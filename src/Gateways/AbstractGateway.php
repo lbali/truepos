@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TruePos\Gateways;
 
+use GuzzleHttp\Psr7\Request;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -189,8 +190,13 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
 
     // ─── Core execution engine ───────────────────────────────
 
-    /** @param  array<string, mixed>  $parameters */
-    private function executeTransaction(array $parameters, TransactionType $type): PaymentResponse
+    /**
+     * Hash → applyHash → serialize → HTTP → parse boru hattı. Capability metotları
+     * (ör. CardStorageInterface::chargeStoredCard) da kullanabilsin diye protected.
+     *
+     * @param  array<string, mixed>  $parameters
+     */
+    protected function executeTransaction(array $parameters, TransactionType $type): PaymentResponse
     {
         try {
             $hash = $this->hashGenerator->generate($parameters, $this->credentials());
@@ -199,7 +205,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
             $headers = $this->buildHttpHeaders($parameters);
 
             // Remove internal underscore-prefixed keys before serialization
-            $parameters = array_filter($parameters, static fn ($key): bool => !str_starts_with((string) $key, '_'), ARRAY_FILTER_USE_KEY);
+            $parameters = array_filter($parameters, static fn ($key): bool => ! str_starts_with((string) $key, '_'), ARRAY_FILTER_USE_KEY);
 
             $payload = $this->serializer->serialize($parameters);
 
@@ -224,31 +230,6 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
     protected function buildHttpHeaders(array $parameters): array
     {
         return [];
-    }
-
-    /** @param  array<string, string>  $headers */
-    private function sendRequest(string $payload, string $url, array $headers = []): string
-    {
-        $allHeaders = array_merge(['Content-Type' => $this->serializer->contentType()], $headers);
-
-        if ($this->requestFactory !== null && $this->streamFactory !== null) {
-            $request = $this->requestFactory->createRequest('POST', $url);
-            foreach ($allHeaders as $name => $value) {
-                $request = $request->withHeader($name, $value);
-            }
-            $request = $request->withBody($this->streamFactory->createStream($payload));
-        } else {
-            $request = new \GuzzleHttp\Psr7\Request(
-                'POST',
-                $url,
-                $allHeaders,
-                $payload,
-            );
-        }
-
-        $response = $this->httpClient->sendRequest($request);
-
-        return (string) $response->getBody();
     }
 
     // ─── Endpoint resolution ─────────────────────────────────
@@ -315,4 +296,29 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
      * True for 3D model (NestPay, Garanti). False for 3D Pay model.
      */
     abstract protected function requiresProvisionAfterThreeD(): bool;
+
+    /** @param  array<string, string>  $headers */
+    private function sendRequest(string $payload, string $url, array $headers = []): string
+    {
+        $allHeaders = array_merge(['Content-Type' => $this->serializer->contentType()], $headers);
+
+        if ($this->requestFactory !== null && $this->streamFactory !== null) {
+            $request = $this->requestFactory->createRequest('POST', $url);
+            foreach ($allHeaders as $name => $value) {
+                $request = $request->withHeader($name, $value);
+            }
+            $request = $request->withBody($this->streamFactory->createStream($payload));
+        } else {
+            $request = new Request(
+                'POST',
+                $url,
+                $allHeaders,
+                $payload,
+            );
+        }
+
+        $response = $this->httpClient->sendRequest($request);
+
+        return (string) $response->getBody();
+    }
 }

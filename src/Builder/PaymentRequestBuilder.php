@@ -8,6 +8,7 @@ use TruePos\DataTransferObjects\PaymentRequest;
 use TruePos\Enums\Currency;
 use TruePos\Enums\PaymentModel;
 use TruePos\Enums\TransactionType;
+use TruePos\Exceptions\ValidationException;
 use TruePos\Validation\ValidationPipeline;
 use TruePos\ValueObjects\CreditCard;
 use TruePos\ValueObjects\Customer;
@@ -34,11 +35,13 @@ final class PaymentRequestBuilder
     /** @var array<string, mixed> */
     private array $metadata = [];
 
+    private bool $storeCard = false;
+
     private function __construct() {}
 
     public static function create(): self
     {
-        return new self();
+        return new self;
     }
 
     public function card(CreditCard $card): self
@@ -145,6 +148,15 @@ final class PaymentRequestBuilder
         return $clone;
     }
 
+    /** Kartı tokenize et (destekleyen gateway'de); token PaymentResponse'ta döner. */
+    public function storeCard(bool $store = true): self
+    {
+        $clone = clone $this;
+        $clone->storeCard = $store;
+
+        return $clone;
+    }
+
     public function build(): PaymentRequest
     {
         $orderId = $this->orderId ?? self::generateOrderId();
@@ -158,7 +170,7 @@ final class PaymentRequestBuilder
         ]);
 
         if ($this->amount === null) {
-            throw \TruePos\Exceptions\ValidationException::withErrors(['amount' => ['Amount is required.']]);
+            throw ValidationException::withErrors(['amount' => ['Amount is required.']]);
         }
 
         return new PaymentRequest(
@@ -171,11 +183,12 @@ final class PaymentRequestBuilder
             customer: $this->customer,
             callbackUrl: $this->callbackUrl,
             metadata: $this->metadata,
+            storeCard: $this->storeCard,
         );
     }
 
     private static function generateOrderId(): string
     {
-        return 'TP' . date('Ymd') . strtoupper(bin2hex(random_bytes(6)));
+        return 'TP'.date('Ymd').strtoupper(bin2hex(random_bytes(6)));
     }
 }
