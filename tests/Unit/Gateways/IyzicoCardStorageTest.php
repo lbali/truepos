@@ -6,12 +6,17 @@ namespace TruePos\Tests\Unit\Gateways;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use TruePos\Builder\PaymentRequestBuilder;
 use TruePos\Contracts\CardStorageInterface;
 use TruePos\DataTransferObjects\StoredCardChargeRequest;
 use TruePos\Enums\TransactionType;
 use TruePos\Gateways\Iyzico\IyzicoGateway;
+use TruePos\Gateways\Iyzico\IyzicoHashGenerator;
 use TruePos\Gateways\Iyzico\IyzicoResponseParser;
+use TruePos\Serializers\JsonSerializer;
 use TruePos\ValueObjects\CreditCard;
 use TruePos\ValueObjects\Money;
 
@@ -93,6 +98,33 @@ final class IyzicoCardStorageTest extends TestCase
             ->build();
 
         $this->assertFalse($request->storeCard);
+    }
+
+    #[Test]
+    public function iyzico_emits_pki_authorization_header_for_server_to_server(): void
+    {
+        $httpClient = new class implements ClientInterface
+        {
+            public function sendRequest(RequestInterface $request): ResponseInterface
+            {
+                throw new \RuntimeException('HTTP çağrısı bu testte kullanılmaz.');
+            }
+        };
+
+        $gateway = new IyzicoGateway(
+            config: ['api_key' => 'KEY', 'secret_key' => 'SECRET', 'payment_url' => 'https://x', 'threed_gateway_url' => 'https://y'],
+            serializer: new JsonSerializer,
+            hashGenerator: new IyzicoHashGenerator,
+            responseParser: new IyzicoResponseParser,
+            httpClient: $httpClient,
+        );
+
+        $method = new \ReflectionMethod($gateway, 'buildHttpHeaders');
+        $method->setAccessible(true);
+        $headers = $method->invoke($gateway, ['_authorization' => 'HASH', '_random' => 'RND']);
+
+        $this->assertSame('IYZWS KEY:HASH', $headers['Authorization']);
+        $this->assertSame('RND', $headers['x-iyzi-rnd']);
     }
 
     #[Test]

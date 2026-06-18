@@ -210,6 +210,23 @@ final class IyzicoGateway extends AbstractGateway implements CardStorageInterfac
         return $parameters;
     }
 
+    /**
+     * iyzico server-to-server çağrıları (purchase/refund/cancel/status/chargeStoredCard)
+     * PKI imzasını gövdede değil "Authorization: IYZWS {apiKey}:{hash}" header'ında ister;
+     * rastgele dizi de x-iyzi-rnd header'ında gider. (3DS form-POST yolu bunu kullanmaz.)
+     *
+     * @param  array<string, mixed>  $parameters
+     * @return array<string, string>
+     */
+    protected function buildHttpHeaders(array $parameters): array
+    {
+        return [
+            'Authorization' => 'IYZWS '.($this->config['api_key'] ?? '').':'.($parameters['_authorization'] ?? ''),
+            'x-iyzi-rnd' => (string) ($parameters['_random'] ?? ''),
+            'Accept' => 'application/json',
+        ];
+    }
+
     protected function credentials(): array
     {
         return [
