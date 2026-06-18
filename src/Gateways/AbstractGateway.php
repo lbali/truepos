@@ -209,7 +209,10 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
 
             $payload = $this->serializer->serialize($parameters);
 
-            $rawResponse = $this->sendRequest($payload, $this->endpointFor($type), $headers);
+            $url = $this->endpointFor($type);
+            $headers = $this->signRequest($payload, $url, $headers);
+
+            $rawResponse = $this->sendRequest($payload, $url, $headers);
             $parsed = $this->serializer->deserialize($rawResponse);
 
             return $this->responseParser->parse($parsed, $type);
@@ -230,6 +233,19 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
     protected function buildHttpHeaders(array $parameters): array
     {
         return [];
+    }
+
+    /**
+     * Post-serialization imzalama hook'u — body+path tabanlı auth (ör. iyzico v2
+     * HMAC) gerektiren gateway'ler Authorization header'ını burada ekler. buildHttpHeaders'tan
+     * farklı olarak serileştirilmiş gövdeyi ve hedef URL'i görür. Varsayılan: değişiklik yok.
+     *
+     * @param  array<string, string>  $headers
+     * @return array<string, string>
+     */
+    protected function signRequest(string $payload, string $url, array $headers): array
+    {
+        return $headers;
     }
 
     // ─── Endpoint resolution ─────────────────────────────────

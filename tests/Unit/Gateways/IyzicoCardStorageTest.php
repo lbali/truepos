@@ -101,7 +101,7 @@ final class IyzicoCardStorageTest extends TestCase
     }
 
     #[Test]
-    public function iyzico_emits_pki_authorization_header_for_server_to_server(): void
+    public function iyzico_emits_v2_hmac_authorization_header(): void
     {
         $httpClient = new class implements ClientInterface
         {
@@ -119,12 +119,22 @@ final class IyzicoCardStorageTest extends TestCase
             httpClient: $httpClient,
         );
 
-        $method = new \ReflectionMethod($gateway, 'buildHttpHeaders');
+        $method = new \ReflectionMethod($gateway, 'signRequest');
         $method->setAccessible(true);
-        $headers = $method->invoke($gateway, ['_authorization' => 'HASH', '_random' => 'RND']);
+        $body = '{"price":"10.0"}';
+        $headers = $method->invoke($gateway, $body, 'https://sandbox-api.iyzipay.com/payment/auth', []);
 
-        $this->assertSame('IYZWS KEY:HASH', $headers['Authorization']);
-        $this->assertSame('RND', $headers['x-iyzi-rnd']);
+        $this->assertStringStartsWith('IYZWSv2 ', $headers['Authorization']);
+        $randomKey = $headers['x-iyzi-rnd'];
+        $this->assertNotEmpty($randomKey);
+
+        // base64 çöz + imzayı bağımsız yeniden hesaplayıp doğrula
+        $decoded = base64_decode(substr($headers['Authorization'], strlen('IYZWSv2 ')));
+        $this->assertStringContainsString('apiKey:KEY', $decoded);
+        $this->assertStringContainsString('randomKey:'.$randomKey, $decoded);
+
+        $expectedSignature = hash_hmac('sha256', $randomKey.'/payment/auth'.$body, 'SECRET');
+        $this->assertStringContainsString('signature:'.$expectedSignature, $decoded);
     }
 
     #[Test]

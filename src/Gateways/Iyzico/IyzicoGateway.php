@@ -211,20 +211,30 @@ final class IyzicoGateway extends AbstractGateway implements CardStorageInterfac
     }
 
     /**
-     * iyzico server-to-server çağrıları (purchase/refund/cancel/status/chargeStoredCard)
-     * PKI imzasını gövdede değil "Authorization: IYZWS {apiKey}:{hash}" header'ında ister;
-     * rastgele dizi de x-iyzi-rnd header'ında gider. (3DS form-POST yolu bunu kullanmaz.)
+     * iyzico v2 kimlik doğrulama (IYZWSv2). İmza gövdeye ve URL path'ine bağlı olduğundan
+     * post-serialization signRequest hook'unda üretilir:
+     *   signature = hex( HMAC-SHA256(randomKey + uriPath + body, secretKey) )
+     *   Authorization: IYZWSv2 base64("apiKey:..&randomKey:..&signature:..")
+     *   x-iyzi-rnd: randomKey
+     * (Legacy v1 IYZWS/PKI yalnız 3DS form yolunda kalır; v2 server-to-server'da.)
      *
-     * @param  array<string, mixed>  $parameters
+     * @param  array<string, string>  $headers
      * @return array<string, string>
      */
-    protected function buildHttpHeaders(array $parameters): array
+    protected function signRequest(string $payload, string $url, array $headers): array
     {
-        return [
-            'Authorization' => 'IYZWS '.($this->config['api_key'] ?? '').':'.($parameters['_authorization'] ?? ''),
-            'x-iyzi-rnd' => (string) ($parameters['_random'] ?? ''),
-            'Accept' => 'application/json',
-        ];
+        $apiKey = (string) ($this->config['api_key'] ?? '');
+        $secretKey = (string) ($this->config['secret_key'] ?? '');
+        $randomKey = time().bin2hex(random_bytes(8));
+        $uriPath = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+        $signature = hash_hmac('sha256', $randomKey.$uriPath.$payload, $secretKey);
+
+        $authParams = 'apiKey:'.$apiKey.'&randomKey:'.$randomKey.'&signature:'.$signature;
+        $headers['Authorization'] = 'IYZWSv2 '.base64_encode($authParams);
+        $headers['x-iyzi-rnd'] = $randomKey;
+        $headers['Accept'] = 'application/json';
+
+        return $headers;
     }
 
     protected function credentials(): array
