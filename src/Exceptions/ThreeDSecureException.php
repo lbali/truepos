@@ -20,6 +20,13 @@ class ThreeDSecureException extends TruePosException
         );
     }
 
+    public static function initializationFailed(?string $message = null): self
+    {
+        return new self(
+            message: '3D Secure initialization failed.'.($message !== null && $message !== '' ? " {$message}" : ''),
+        );
+    }
+
     public static function gatewayNotResolved(): self
     {
         return new self(

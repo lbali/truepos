@@ -10,15 +10,19 @@ Bu projedeki önemli değişiklikler burada belgelenir.
   - Token'lar `PaymentResponse->cardUserKey` + `->cardToken` olarak döner (`IyzicoResponseParser`).
   - `chargeStoredCard(StoredCardChargeRequest)` ile saklı kartla PAN/CVC'siz, non-3DS tahsilat (recurring/abonelik için).
 - `StoredCardChargeRequest` DTO.
+- `AbstractGateway`: post-serialization `signRequest()` hook'u (gövde+path tabanlı auth için) ve server-to-server 3DS için `threeDUsesServerInitialize()` / `parseThreeDInitialize()` / `threeDProvisionEndpoint()` hook'ları. `ThreeDSecureData`'ya `htmlContent` (server-init modeli).
 
 ### Değişenler
-- `AbstractGateway::executeTransaction()` artık `protected` — capability metotları (ör. `chargeStoredCard`) ortak boru hattını kullanabilsin diye.
+- **iyzico kimlik doğrulama v1 PKI (IYZWS) → v2 HMAC (IYZWSv2)**. Güncel iyzico v1 imzayı "Geçersiz imza" ile reddediyordu; server-to-server çağrılar (purchase/refund/cancel/status/chargeStoredCard) artık `HMAC-SHA256(randomKey + uriPath + body, secretKey)` imzalı.
+- **iyzico 3DS artık server-to-server**: form-POST yerine `/payment/3dsecure/initialize` çağrılıp hazır `threeDSHtmlContent` döndürülüyor; tamamlama `/payment/3dsecure/auth`'a gidiyor; callback doğrulaması `paymentId`+`conversationId` üzerinden.
+- `AbstractGateway::executeTransaction()` artık `protected` + opsiyonel `endpointOverride` (capability metotları ve 3DS provision için).
 
 ### Düzeltmeler
 - Sayısal sepet/parametre anahtarlarında `str_starts_with()` int-key `TypeError`'ı (regular ödemede "bağlantı hatası" olarak görünüyordu).
+- iyzico server-to-server çağrılarda eksik `Authorization` header'ı.
 
 ### Test
-- Test paketi 149 test / 480 doğrulama (iyzico kart saklama dahil). PHPStan seviye 8 temiz.
+- Test paketi 156 test / 496 doğrulama (iyzico kart saklama + v2 auth + 3DS server-init dahil). PHPStan seviye 8 temiz. iyzico sandbox'ta canlı doğrulandı: non-3DS ödeme başarılı, 3DS initialize gerçek HTML döndürüyor.
 
 ## [0.1.0-beta] - 2026-04-17
 

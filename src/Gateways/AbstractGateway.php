@@ -22,6 +22,7 @@ use TruePos\DataTransferObjects\ThreeDSecureData;
 use TruePos\Enums\TransactionType;
 use TruePos\Exceptions\GatewayException;
 use TruePos\Exceptions\HashMismatchException;
+use TruePos\Exceptions\UnsupportedOperationException;
 use TruePos\ValueObjects\Money;
 
 abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterface
@@ -145,6 +146,10 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
 
     final public function initializeThreeD(PaymentRequest $request): ThreeDSecureData
     {
+        if ($this->threeDUsesServerInitialize()) {
+            return $this->serverInitializeThreeD($request);
+        }
+
         $params = $this->buildThreeDFormParameters($request);
         $hash = $this->hashGenerator->generate($params, $this->credentials());
         $params = $this->applyHash($params, $hash);
@@ -182,6 +187,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
             return $this->executeTransaction(
                 parameters: $this->buildThreeDProvisionParameters($callbackData),
                 type: TransactionType::Purchase,
+                endpointOverride: $this->threeDProvisionEndpoint(),
             );
         }
 
@@ -196,7 +202,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
      *
      * @param  array<string, mixed>  $parameters
      */
-    protected function executeTransaction(array $parameters, TransactionType $type): PaymentResponse
+    protected function executeTransaction(array $parameters, TransactionType $type, ?string $endpointOverride = null): PaymentResponse
     {
         try {
             $hash = $this->hashGenerator->generate($parameters, $this->credentials());
@@ -209,7 +215,7 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
 
             $payload = $this->serializer->serialize($parameters);
 
-            $url = $this->endpointFor($type);
+            $url = $endpointOverride ?? $this->endpointFor($type);
             $headers = $this->signRequest($payload, $url, $headers);
 
             $rawResponse = $this->sendRequest($payload, $url, $headers);
@@ -246,6 +252,35 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
     protected function signRequest(string $payload, string $url, array $headers): array
     {
         return $headers;
+    }
+
+    /**
+     * iyzico gibi 3DS'i form-POST yerine server-to-server initialize ile yapan
+     * gateway'ler true döner; initializeThreeD o zaman hazır 3DS HTML'ini sunucudan alır.
+     */
+    protected function threeDUsesServerInitialize(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Server-to-server 3DS initialize yanıtını ThreeDSecureData'ya (htmlContent) çevirir.
+     * threeDUsesServerInitialize() true ise implemente edilmeli.
+     *
+     * @param  array<string, mixed>  $parsed
+     */
+    protected function parseThreeDInitialize(array $parsed): ThreeDSecureData
+    {
+        throw UnsupportedOperationException::transactionType($this->gateway()->value, '3ds-server-initialize');
+    }
+
+    /**
+     * 3DS tamamlama (provision) farklı bir endpoint istiyorsa onu döner; null ise
+     * standart endpoint() kullanılır. (iyzico: /payment/3dsecure/auth.)
+     */
+    protected function threeDProvisionEndpoint(): ?string
+    {
+        return null;
     }
 
     // ─── Endpoint resolution ─────────────────────────────────
@@ -312,6 +347,32 @@ abstract class AbstractGateway implements GatewayInterface, ThreeDSecureInterfac
      * True for 3D model (NestPay, Garanti). False for 3D Pay model.
      */
     abstract protected function requiresProvisionAfterThreeD(): bool;
+
+    /**
+     * Server-to-server 3DS initialize (ör. iyzico): gövdeyi POST'lar ve sağlayıcıdan
+     * hazır 3DS HTML'i (threeDSHtmlContent) alır. threeDUsesServerInitialize() true
+     * olan gateway'lerde form-POST modeli yerine kullanılır.
+     */
+    private function serverInitializeThreeD(PaymentRequest $request): ThreeDSecureData
+    {
+        $parameters = $this->buildThreeDFormParameters($request);
+        $parameters = array_filter($parameters, static fn ($key): bool => ! str_starts_with((string) $key, '_'), ARRAY_FILTER_USE_KEY);
+
+        $payload = $this->serializer->serialize($parameters);
+        $url = $this->threeDGatewayUrl();
+        $headers = $this->signRequest($payload, $url, $this->buildHttpHeaders($parameters));
+
+        try {
+            $rawResponse = $this->sendRequest($payload, $url, $headers);
+            $parsed = $this->serializer->deserialize($rawResponse);
+        } catch (GatewayException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw GatewayException::connectionFailed($this->gateway()->value, $e);
+        }
+
+        return $this->parseThreeDInitialize($parsed);
+    }
 
     /** @param  array<string, string>  $headers */
     private function sendRequest(string $payload, string $url, array $headers = []): string

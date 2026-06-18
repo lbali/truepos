@@ -7,13 +7,24 @@ namespace TruePos\DataTransferObjects;
 final readonly class ThreeDSecureData
 {
     /**
-     * @param  string  $gatewayUrl  The bank's 3DS gateway URL to POST the form to.
-     * @param  array<string, string>  $formParameters  Hidden form fields for the 3DS redirect.
-     * @param  string  $method  HTTP method (always POST for Turkish POS).
+     * İki 3DS modelini taşır:
+     *  - Form-POST (NestPay, Garanti...): gatewayUrl + formParameters; tarayıcı POST'lar.
+     *  - HTML-içerik (iyzico): htmlContent doğrudan render edilir (server-to-server initialize).
+     *
+     * @param  string  $gatewayUrl  Bankanın 3DS gateway URL'i (form-POST modeli).
+     * @param  array<string, string>  $formParameters  3DS yönlendirmesi için gizli form alanları.
+     * @param  string  $method  HTTP metodu (Türk POS'larında daima POST).
+     * @param  string|null  $htmlContent  Hazır 3DS HTML'i (server-init modeli; iyzico).
      */
     public function __construct(
-        public string $gatewayUrl,
-        public array $formParameters,
+        public string $gatewayUrl = '',
+        public array $formParameters = [],
         public string $method = 'POST',
+        public ?string $htmlContent = null,
     ) {}
+
+    public function hasHtmlContent(): bool
+    {
+        return $this->htmlContent !== null && $this->htmlContent !== '';
+    }
 }

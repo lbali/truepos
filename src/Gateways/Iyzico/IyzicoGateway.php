@@ -11,10 +11,12 @@ use TruePos\DataTransferObjects\PaymentResponse;
 use TruePos\DataTransferObjects\RefundRequest;
 use TruePos\DataTransferObjects\StatusRequest;
 use TruePos\DataTransferObjects\StoredCardChargeRequest;
+use TruePos\DataTransferObjects\ThreeDSecureData;
 use TruePos\Enums\Currency;
 use TruePos\Enums\Gateway;
 use TruePos\Enums\PaymentModel;
 use TruePos\Enums\TransactionType;
+use TruePos\Exceptions\ThreeDSecureException;
 use TruePos\Gateways\AbstractGateway;
 use TruePos\ValueObjects\Money;
 
@@ -59,26 +61,16 @@ final class IyzicoGateway extends AbstractGateway implements CardStorageInterfac
     }
 
     /**
-     * Callback payload sanity check (NOT cryptographic verification).
-     *
-     * iyzico's 3DS callback returns a token that can only be verified by calling
-     * iyzico's API server-to-server. This method validates that the token is present
-     * and has a plausible format (min 16 chars). The actual payment verification
-     * happens when completeThreeD() calls buildThreeDProvisionParameters() →
-     * executeTransaction(), because requiresProvisionAfterThreeD() returns true.
-     * The iyzico API will reject any forged or invalid token at that step.
+     * iyzico 3DS callback doğrulaması (kriptografik değil). iyzico /payment/3dsecure/auth
+     * callback'i paymentId + conversationId döndürür; gerçek doğrulama completeThreeD()
+     * içindeki server-to-server provision çağrısında olur (iyzico geçersiz paymentId'yi
+     * orada reddeder). Bu metot yalnız zorunlu alanların varlığını kontrol eder.
      *
      * @param  array<string, mixed>  $callbackData
      */
     public function validateThreeDCallbackPayload(array $callbackData): bool
     {
-        $token = $callbackData['token'] ?? '';
-
-        if ($token === '' || strlen($token) < 16) {
-            return false;
-        }
-
-        return true;
+        return ! empty($callbackData['paymentId']) && ! empty($callbackData['conversationId']);
     }
 
     protected function buildPurchaseParameters(PaymentRequest $request): array
@@ -195,11 +187,17 @@ final class IyzicoGateway extends AbstractGateway implements CardStorageInterfac
 
     protected function buildThreeDProvisionParameters(array $callbackData): array
     {
-        return [
+        $params = [
             'locale' => $this->config['locale'] ?? 'tr',
             'conversationId' => $callbackData['conversationId'] ?? '',
             'paymentId' => $callbackData['paymentId'] ?? '',
         ];
+
+        if (! empty($callbackData['conversationData'])) {
+            $params['conversationData'] = $callbackData['conversationData'];
+        }
+
+        return $params;
     }
 
     protected function applyHash(array $parameters, string $hash): array
@@ -268,6 +266,44 @@ final class IyzicoGateway extends AbstractGateway implements CardStorageInterfac
     protected function requiresProvisionAfterThreeD(): bool
     {
         return true;
+    }
+
+    protected function threeDUsesServerInitialize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * iyzico /payment/3dsecure/initialize yanıtı: { status, threeDSHtmlContent (base64) }.
+     * Hazır HTML'i çözüp ThreeDSecureData->htmlContent olarak döner.
+     *
+     * @param  array<string, mixed>  $parsed
+     */
+    protected function parseThreeDInitialize(array $parsed): ThreeDSecureData
+    {
+        if (($parsed['status'] ?? '') !== 'success') {
+            throw ThreeDSecureException::initializationFailed($parsed['errorMessage'] ?? null);
+        }
+
+        $html = (string) ($parsed['threeDSHtmlContent'] ?? '');
+        $decoded = base64_decode($html, true);
+
+        return new ThreeDSecureData(htmlContent: $decoded !== false && $decoded !== '' ? $decoded : $html);
+    }
+
+    /** 3DS tamamlama iyzico'da /payment/3dsecure/auth'a gider (purchase endpoint'i değil). */
+    protected function threeDProvisionEndpoint(): ?string
+    {
+        if (! empty($this->config['threed_auth_url'])) {
+            return (string) $this->config['threed_auth_url'];
+        }
+
+        $parts = parse_url((string) ($this->config['payment_url'] ?? ''));
+        if (isset($parts['scheme'], $parts['host'])) {
+            return $parts['scheme'].'://'.$parts['host'].'/payment/3dsecure/auth';
+        }
+
+        return null;
     }
 
     /**

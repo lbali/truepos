@@ -66,6 +66,8 @@ Bir sağlayıcıdan diğerine geçmek için tek yapmanız gereken ayarları değ
 
 > NestPay sürücüsü tek başına 8+ bankayı destekler. Toplamda **20+ banka ve ödeme kuruluşu** tek API ile kullanılabilir.
 
+> **Kart saklama (card-on-file / recurring):** `CardStorageInterface` ile saklı karttan tekrar tahsilat. Şu an **iyzico** destekliyor — ödemede `->storeCard()` ile kart tokenize edilir, sonra `chargeStoredCard()` ile PAN/CVC olmadan çekilir (abonelik yenileme vb.).
+
 ## Gereksinimler
 
 - PHP 8.2+
@@ -161,6 +163,46 @@ Event::listen(PaymentFailed::class, function (PaymentFailed $event) {
     // Hata yönetimi
 });
 ```
+
+### Kart Saklama (Card-on-File) ve Recurring
+
+Tokenizasyonu destekleyen sağlayıcılarda (şu an **iyzico**) kartı bir ödeme sırasında saklayıp sonradan PAN/CVC olmadan tekrar tahsil edebilirsiniz (abonelik yenileme, tek-tık ödeme):
+
+```php
+use TruePos\Builder\PaymentRequestBuilder;
+use TruePos\Contracts\CardStorageInterface;
+use TruePos\DataTransferObjects\StoredCardChargeRequest;
+use TruePos\ValueObjects\Money;
+
+$gateway = $truePos->gateway('iyzico');
+
+// 1) İlk ödemede kartı sakla (3DS önerilir): ->storeCard()
+$request = PaymentRequestBuilder::create()
+    ->card($card)
+    ->amount(Money::fromDecimal(149.90))
+    ->customer($customer)
+    ->storeCard()        // iyzico registerCard=1
+    ->threeD($callbackUrl)
+    ->build();
+
+$response = $gateway->purchase($request);
+// 3DS tamamlandıktan sonra dönen yanıt token'ları taşır:
+$cardUserKey = $response->cardUserKey;
+$cardToken   = $response->cardToken;   // güvenli sakla (PAN'ı DEĞİL)
+
+// 2) Sonraki tahsilatlar — saklı kartla, non-3DS:
+if ($gateway instanceof CardStorageInterface) {
+    $renewal = $gateway->chargeStoredCard(new StoredCardChargeRequest(
+        amount: Money::fromDecimal(149.90),
+        orderId: 'SUB-2026-07',
+        cardUserKey: $cardUserKey,
+        cardToken: $cardToken,
+        customer: $customer,
+    ));
+}
+```
+
+> Bir sağlayıcının kart saklamayı destekleyip desteklemediğini `instanceof CardStorageInterface` ile kontrol edin.
 
 ### Framework-Bağımsız Kullanım (Symfony, saf PHP vb.)
 
@@ -330,6 +372,7 @@ composer check       # Hepsi birden
 - PCI-DSS uyumluluğu üye işyeri/uygulama tarafının sorumluluğundadır. Bu paket kart verisini bellekte işler, saklamaz.
 - Kart verisini mümkünse 3D Host veya barındırılan ödeme formu ile doğrudan bankada toplamak önerilir (`->threeDHost()` kullanın).
 - Banka API'leri zaman zaman geriye uyumsuz değişiklik yapabilir. Sorun yaşarsanız issue açın.
+- iyzico kimlik doğrulaması **v2 HMAC (IYZWSv2)** kullanır ve 3DS akışı **server-to-server**'dır (initialize hazır `threeDSHtmlContent` döndürür; bu HTML doğrudan render edilir). Kart saklama yalnız tokenizasyonu olan sağlayıcılarda (`CardStorageInterface`) çalışır.
 
 ## Güvenlik
 
